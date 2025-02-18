@@ -99,6 +99,3 @@ if __name__ == "__main__":
             node1_data = getNodeByName(node1)
             node2_data = getNodeByName(node2)
             create_graph(node1_data, node2_data, relation)
-            
-            
-            
