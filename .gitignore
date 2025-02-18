@@ -1,6 +1,8 @@
 
 token.txt
 cache.json
+botDiscord
+botDiscord.tar
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
