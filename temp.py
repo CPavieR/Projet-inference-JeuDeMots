@@ -400,6 +400,29 @@ response = requests.get(get_relation_from.format(node1_name=node1_name))
 print(response.status_code)
 print(response.text)
 """
+class Graph:
+    def __init__(self):
+        self.nodes = {}
+        self.edges = []
+
+    def add_node(self, node_id, name):
+        self.nodes[node_id] = name
+
+    def add_edge(self, node1_id, node2_id, relation, weight):
+        self.edges.append((node1_id, node2_id, relation, weight))
+
+    def print_graph(self):
+        for edge in self.edges:
+            node1_id, node2_id, relation, weight = edge
+            node1_name = self.nodes[node1_id]
+            node2_name = self.nodes[node2_id]
+            print(f"{node1_name} {relation} {node2_name} (w={weight})")
+    def printTriangles(self, node1, node2):
+        for edge in self.edges:
+            if edge[0] == node1:
+                for edge2 in self.edges:
+                    if edge2[0] == edge[1] and edge2[1] == node2:
+                        print(f"Triangle: {self.nodes[node1]} -> {edge[2]}->{self.nodes[edge[1]]} -> {edge2[2]} -> {self.nodes[node2]}")
 
 
 """node1= "chat"
@@ -408,53 +431,29 @@ response = requests.get(get_relation_between.format(node1_name=node1, node2_name
 print(response.status_code)
 print(response.text)"""
 def create_graph(node1_data, node2_data, relation):
-    print(node1_data)
-    print(node2_data)
-    print(relation)
-    G = nx.Graph()
-    G.add_node(node1_data["id"], name=node1_data["name"])
-    G.add_node(node2_data["id"], name=node2_data["name"])
-    G.add_edge(node1_data["id"], node2_data["id"], relation=relation, w=0)
-    frontiere= [node1_data]
-    while frontiere:
-        current_node = frontiere.pop()
-        li_relation = requestWrapper(get_relation_from.format(node1_name=current_node["name"]))
-        li_relation = json.loads(li_relation)
-        for relation in li_relation["relations"]:
-            node2Id = relation["node2"]
-            #fin node 2 name
-            node2 = None
-            for node in li_relation["nodes"]:
-                if node["id"] == node2Id:
-                    node2 = node
-                    #r_isa :6
-                    #r_hypo : 8
-            if node2 is not None and abs(relation["w"])>70 and (relation["type"]== 6 or relation["type"]==8):
+    graph = Graph()
+    graph.add_node(node1_data["id"], node1_data["name"])
+    graph.add_node(node2_data["id"], node2_data["name"])
 
-                print(get_relation_between.format(node1_name=node2["id"], node2_name=node2_data["id"]))
-                li_relation2 = requestWrapper(get_relation_between.format(node1_name=node2["name"], node2_name=node2_data["name"]))
-                li_relation2 = json.loads(li_relation2)
-                print(li_relation2)
-                if("relations" in li_relation2):
-                    for rel in li_relation2["relations"]:
-                        G.add_node(node2["id"], name=node2["name"])
-                        G.add_edge(current_node["id"], node2["id"], relation=translate_relationNBtoNOM(relation["type"]), w=relation["w"])
-                        G.add_edge( node2_data["id"], node2["id"],relation=translate_relationNBtoNOM(rel["type"]), w=rel["w"])
-    pos = nx.planar_layout(G)
-    nx.draw(G, pos, with_labels=True, labels=nx.get_node_attributes(G, 'name'))
-    edge_labels = nx.get_edge_attributes(G, 'relation')
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
-    #we want it green and large for a w positive and big and red thin for a small negative
-    colors=[]
-    edges = G.edges()
-    for e in edges:
-        if G[e[0]][e[1]]['w'] > 0:
-           colors.append("green")
-        if G[e[0]][e[1]]['w'] < 0:
-            colors.append("red")
+    li_relation = requestWrapper(get_relation_from.format(node1_name=node1_data["name"]))
+    li_relation = json.loads(li_relation)
+    for relation in li_relation["relations"]:
+        node2Id = relation["node2"]
+        node2 = None
+        for node in li_relation["nodes"]:
+            if node["id"] == node2Id:
+                node2 = node
+        if node2 is not None and abs(relation["w"]) > 70 and (relation["type"] == 6 or relation["type"] == 8):
+            li_relation2 = requestWrapper(get_relation_between.format(node1_name=node2["name"], node2_name=node2_data["name"]))
+            li_relation2 = json.loads(li_relation2)
+            if "relations" in li_relation2:
+                for rel in li_relation2["relations"]:
+                    graph.add_node(node2["id"], node2["name"])
+                    graph.add_edge(node1_data["id"], node2["id"], translate_relationNBtoNOM(relation["type"]), relation["w"])
+                    graph.add_edge(node2["id"], node2_data["id"], translate_relationNBtoNOM(rel["type"]), rel["w"])
 
-    nx.draw(G, pos, with_labels=True, labels=nx.get_node_attributes(G, 'name'), edge_color=colors)
-    plt.show()
+    graph.printTriangles(node1_data["id"], node2_data["id"])
+#chat r_isa-1 animal
 #pigeon r_agent-1 voler
 if __name__ == "__main__":
     print("Hello world")
