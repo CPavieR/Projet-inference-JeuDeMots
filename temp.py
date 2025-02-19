@@ -441,7 +441,14 @@ def sortRelationsInducDeduc(relations):
     relations = sorted(relations, key=lambda x: x["w"], reverse=True)
     return relations[:3]    
 
-def create_graph(node1_data, node2_data, relation_wanted):
+
+def sortRelationsSym(relations):
+    accepted_types=[5,24]
+    relations = [relation for relation in relations if relation["type"] in accepted_types]
+    relations = sorted(relations, key=lambda x: x["w"], reverse=True)
+    return relations[:3]    
+
+def create_graphInducDeduc(node1_data, node2_data, relation_wanted):
     graph = Graph()
     graph.add_node(node1_data["id"], node1_data["name"])
     graph.add_node(node2_data["id"], node2_data["name"])
@@ -467,6 +474,34 @@ def create_graph(node1_data, node2_data, relation_wanted):
     msg=graph.printTriangles(node1_data["id"], node2_data["id"])
     print(msg)
     return msg
+
+
+def create_graphSymTri(node1_data, node2_data, relation_wanted):
+    graph = Graph()
+    graph.add_node(node1_data["id"], node1_data["name"])
+    graph.add_node(node2_data["id"], node2_data["name"])
+
+    li_relation = requestWrapper(get_relation_from.format(node1_name=node1_data["name"]))
+    li_relation = json.loads(li_relation)
+    li_relation["relations"]=sortRelationsSym(li_relation["relations"])
+    for relation in li_relation["relations"]:
+        node2Id = relation["node2"]
+        node2 = None
+        for node in li_relation["nodes"]:
+            if node["id"] == node2Id:
+                node2 = node
+        li_relation2 = requestWrapper(get_relation_between.format(node1_name=node2["name"], node2_name=node2_data["name"]))
+        li_relation2 = json.loads(li_relation2)
+        if "relations" in li_relation2:
+            li_relation2["relations"]=sortRelationsSym(li_relation2["relations"])
+            for rel in li_relation2["relations"]:
+                graph.add_node(node2["id"], node2["name"])
+                graph.add_edge(node1_data["id"], node2["id"], translate_relationNBtoNOM(relation["type"]), relation["w"])
+                graph.add_edge(node2["id"], node2_data["id"], translate_relationNBtoNOM(rel["type"]), rel["w"])
+
+    msg=graph.printTriangles(node1_data["id"], node2_data["id"])
+    print(msg)
+    return msg
 #chat r_isa animal
 #pigeon r_agent-1 voler
 
@@ -480,7 +515,7 @@ def callFromDiscord(input_text):
             #print node1 id
             node1_data = getNodeByName(node1)
             node2_data = getNodeByName(node2)
-            return create_graph(node1_data, node2_data, relation)
+            return create_graphSymTri(node1_data, node2_data, relation)
 
 if __name__ == "__main__":
     print("Hello world")
@@ -497,4 +532,4 @@ if __name__ == "__main__":
             #print node1 id
             node1_data = getNodeByName(node1)
             node2_data = getNodeByName(node2)
-            create_graph(node1_data, node2_data, relation)
+            create_graphSymTri(node1_data, node2_data, relation)
