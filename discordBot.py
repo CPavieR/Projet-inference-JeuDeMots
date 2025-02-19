@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-
+from temp import callFromDiscord
 intents = discord.Intents.default()
 intents.message_content = True
 
@@ -12,13 +12,16 @@ async def on_ready():
 
 @bot.command()
 async def salut(ctx):
-    #print the massege
+    
     await ctx.send('Salut !')
     
 @bot.command()
-async def secret(ctx):
-    
-    await ctx.send("ssdrfg")
+async def secret(ctx, *, message_content):
+    # Capture the content of the message after the command
+    processed_content = callFromDiscord(message_content)
+
+    # Send the processed content back to the channel
+    await ctx.send(processed_content)
 
 #read the token from the file
 file = open("token.txt", "r")

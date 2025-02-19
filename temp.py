@@ -1,8 +1,6 @@
 # https://jdm-api.demo.lirmm.fr/schema
 import requests
 import json
-import networkx as nx
-import matplotlib.pyplot as plt
 link_api ="https://jdm-api.demo.lirmm.fr/schema"
 api_get_node_by_name = "https://jdm-api.demo.lirmm.fr/v0/node_by_name/{node_name}"
 get_relation_from ="https://jdm-api.demo.lirmm.fr/v0/relations/from/{node1_name}"
@@ -418,6 +416,7 @@ class Graph:
             node2_name = self.nodes[node2_id]
             print(f"{node1_name} {relation} {node2_name} (w={weight})")
     def printTriangles(self, node1, node2):
+        msg=""
         for edge in self.edges:
             if edge[0] == node1:
                 typeOfTriangles =""
@@ -427,8 +426,8 @@ class Graph:
                     typeOfTriangles = "inductive"
                 for edge2 in self.edges:
                     if edge2[0] == edge[1] and edge2[1] == node2:
-                        print("Triangle "+typeOfTriangles+f" : {self.nodes[node1]} -> {edge[2]} -> {self.nodes[edge[1]]} -> {edge2[2]} -> {self.nodes[node2]}")
-
+                        msg=msg+("Triangle "+typeOfTriangles+f" : {self.nodes[node1]} -> {edge[2]} -> {self.nodes[edge[1]]} -> {edge2[2]} -> {self.nodes[node2]}"+"\n")
+        return msg
 
 """node1= "chat"
 node2 = "calin"
@@ -465,9 +464,24 @@ def create_graph(node1_data, node2_data, relation_wanted):
                     graph.add_edge(node1_data["id"], node2["id"], translate_relationNBtoNOM(relation["type"]), relation["w"])
                     graph.add_edge(node2["id"], node2_data["id"], translate_relationNBtoNOM(rel["type"]), rel["w"])
 
-    graph.printTriangles(node1_data["id"], node2_data["id"])
+    msg=graph.printTriangles(node1_data["id"], node2_data["id"])
+    print(msg)
+    return msg
 #chat r_isa animal
 #pigeon r_agent-1 voler
+
+def callFromDiscord(input_text):
+        li = input_text.split(" ")
+        if len(li) == 3:
+            node1 = li[0]
+            node2 = li[2]
+            relation = li[1]
+            print(f"node1: {node1}, node2: {node2}, relation: {relation}")
+            #print node1 id
+            node1_data = getNodeByName(node1)
+            node2_data = getNodeByName(node2)
+            return create_graph(node1_data, node2_data, relation)
+
 if __name__ == "__main__":
     print("Hello world")
     while True:
