@@ -420,9 +420,14 @@ class Graph:
     def printTriangles(self, node1, node2):
         for edge in self.edges:
             if edge[0] == node1:
+                typeOfTriangles =""
+                if edge[2]=="r_isa":
+                    typeOfTriangles = "deductive"
+                if edge[2]=="r_hypo":
+                    typeOfTriangles = "inductive"
                 for edge2 in self.edges:
                     if edge2[0] == edge[1] and edge2[1] == node2:
-                        print(f"Triangle: {self.nodes[node1]} -> {edge[2]}->{self.nodes[edge[1]]} -> {edge2[2]} -> {self.nodes[node2]}")
+                        print("Triangle "+typeOfTriangles+f" : {self.nodes[node1]} -> {edge[2]} -> {self.nodes[edge[1]]} -> {edge2[2]} -> {self.nodes[node2]}")
 
 
 """node1= "chat"
@@ -430,30 +435,38 @@ node2 = "calin"
 response = requests.get(get_relation_between.format(node1_name=node1, node2_name=node2))
 print(response.status_code)
 print(response.text)"""
-def create_graph(node1_data, node2_data, relation):
+
+def sortRelationsInducDeduc(relations):
+    accepted_types=[6,8]
+    relations = [relation for relation in relations if relation["type"] in accepted_types]
+    relations = sorted(relations, key=lambda x: x["w"], reverse=True)
+    return relations[:3]    
+
+def create_graph(node1_data, node2_data, relation_wanted):
     graph = Graph()
     graph.add_node(node1_data["id"], node1_data["name"])
     graph.add_node(node2_data["id"], node2_data["name"])
 
     li_relation = requestWrapper(get_relation_from.format(node1_name=node1_data["name"]))
     li_relation = json.loads(li_relation)
+    li_relation["relations"]=sortRelationsInducDeduc(li_relation["relations"])
     for relation in li_relation["relations"]:
         node2Id = relation["node2"]
         node2 = None
         for node in li_relation["nodes"]:
             if node["id"] == node2Id:
                 node2 = node
-        if node2 is not None and abs(relation["w"]) > 70 and (relation["type"] == 6 or relation["type"] == 8):
-            li_relation2 = requestWrapper(get_relation_between.format(node1_name=node2["name"], node2_name=node2_data["name"]))
-            li_relation2 = json.loads(li_relation2)
-            if "relations" in li_relation2:
-                for rel in li_relation2["relations"]:
+        li_relation2 = requestWrapper(get_relation_between.format(node1_name=node2["name"], node2_name=node2_data["name"]))
+        li_relation2 = json.loads(li_relation2)
+        if "relations" in li_relation2:
+            for rel in li_relation2["relations"]:
+                if(rel["type"]==nom_a_nombre[relation_wanted]):
                     graph.add_node(node2["id"], node2["name"])
                     graph.add_edge(node1_data["id"], node2["id"], translate_relationNBtoNOM(relation["type"]), relation["w"])
                     graph.add_edge(node2["id"], node2_data["id"], translate_relationNBtoNOM(rel["type"]), rel["w"])
 
     graph.printTriangles(node1_data["id"], node2_data["id"])
-#chat r_isa-1 animal
+#chat r_isa animal
 #pigeon r_agent-1 voler
 if __name__ == "__main__":
     print("Hello world")
