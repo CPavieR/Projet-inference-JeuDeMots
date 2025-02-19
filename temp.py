@@ -458,24 +458,32 @@ def sortRelationsSym(relations):
     return relations[:3]    
 
 def create_graphInducDeduc(node1_data, node2_data, relation_wanted):
+    #On initialise le graphe avec neoud de depart et objectif
     graph = Graph()
     graph.add_node(node1_data["id"], node1_data["name"])
     graph.add_node(node2_data["id"], node2_data["name"])
-
+    #on fait la requete à l'api pour avoir les relations du noeud de depart
     li_relation = requestWrapper(get_relation_from.format(node1_name=node1_data["name"]))
     li_relation = json.loads(li_relation)
+    #On trie les requetes qui concernne que les relations inductives et deductives
     li_relation["relations"]=sortRelationsInducDeduc(li_relation["relations"])
+    #pour chacune de ces relations :
     for relation in li_relation["relations"]:
+        #on recupere le noeud de destination de la relation
         node2Id = relation["node2"]
         node2 = None
         for node in li_relation["nodes"]:
             if node["id"] == node2Id:
                 node2 = node
+        #on recupere les relation entre le noeud de destination et l'objectif
         li_relation2 = requestWrapper(get_relation_between.format(node1_name=node2["name"], node2_name=node2_data["name"]))
         li_relation2 = json.loads(li_relation2)
         if "relations" in li_relation2:
+            #pour chacune de ces relation
             for rel in li_relation2["relations"]:
+                #on teste qu'elle sont du bon type
                 if(rel["type"]==nom_a_nombre[relation_wanted]):
+                    #si oui, on ajoute tout au graphe
                     graph.add_node(node2["id"], node2["name"])
                     graph.add_edge(node1_data["id"], node2["id"], translate_relationNBtoNOM(relation["type"]), relation["w"])
                     graph.add_edge(node2["id"], node2_data["id"], translate_relationNBtoNOM(rel["type"]), rel["w"])
@@ -502,11 +510,12 @@ def create_graphSymTri(node1_data, node2_data, relation_wanted):
         li_relation2 = requestWrapper(get_relation_between.format(node1_name=node2["name"], node2_name=node2_data["name"]))
         li_relation2 = json.loads(li_relation2)
         if "relations" in li_relation2:
-            li_relation2["relations"]=sortRelationsSym(li_relation2["relations"])
+            #li_relation2["relations"]=sortRelationsSym(li_relation2["relations"])
             for rel in li_relation2["relations"]:
-                graph.add_node(node2["id"], node2["name"])
-                graph.add_edge(node1_data["id"], node2["id"], translate_relationNBtoNOM(relation["type"]), relation["w"])
-                graph.add_edge(node2["id"], node2_data["id"], translate_relationNBtoNOM(rel["type"]), rel["w"])
+                if(rel["type"]==nom_a_nombre[relation_wanted]):
+                    graph.add_node(node2["id"], node2["name"])
+                    graph.add_edge(node1_data["id"], node2["id"], translate_relationNBtoNOM(relation["type"]), relation["w"])
+                    graph.add_edge(node2["id"], node2_data["id"], translate_relationNBtoNOM(rel["type"]), rel["w"])
 
     msg=graph.printTriangles(node1_data["id"], node2_data["id"])
     print(msg)
@@ -514,7 +523,7 @@ def create_graphSymTri(node1_data, node2_data, relation_wanted):
 #chat r_isa animal
 #pigeon r_agent-1 voler
 
-def callFromDiscord(input_text):
+def callFromDiscordSym(input_text):
         li = input_text.split(" ")
         if len(li) == 3:
             node1 = li[0]
@@ -525,6 +534,18 @@ def callFromDiscord(input_text):
             node1_data = getNodeByName(node1)
             node2_data = getNodeByName(node2)
             return create_graphSymTri(node1_data, node2_data, relation)
+
+def callFromDiscordInduc(input_text):
+        li = input_text.split(" ")
+        if len(li) == 3:
+            node1 = li[0]
+            node2 = li[2]
+            relation = li[1]
+            print(f"node1: {node1}, node2: {node2}, relation: {relation}")
+            #print node1 id
+            node1_data = getNodeByName(node1)
+            node2_data = getNodeByName(node2)
+            return create_graphInducDeduc(node1_data, node2_data, relation)
 
 if __name__ == "__main__":
     print("Hello world")
