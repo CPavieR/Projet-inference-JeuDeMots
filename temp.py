@@ -1,6 +1,7 @@
 # https://jdm-api.demo.lirmm.fr/schema
 import requests
 import json
+import re
 link_api ="https://jdm-api.demo.lirmm.fr/schema"
 api_get_node_by_name = "https://jdm-api.demo.lirmm.fr/v0/node_by_name/{node_name}"
 get_relation_from ="https://jdm-api.demo.lirmm.fr/v0/relations/from/{node1_name}"
@@ -356,10 +357,18 @@ nombre_a_nom = {
 }
 
 def translate_relationNBtoNOM(relation):
+    nom = "Uknown"
+    try:
+        nom = nombre_a_nom[relation]
+        return nom
+    except Exception:
+        return nom
+"""
+def translate_relationNBtoNOM(relation):
     if relation in nombre_a_nom.keys():
         return nombre_a_nom[relation]
     return "Unknown"
-
+"""
 
 def requestWrapper(url):
     cache = open("cache.json", "r")
@@ -523,11 +532,11 @@ if __name__ == "__main__":
         input_text = input("entrer une relation entre deux mots:(exit pour quitter) ")
         if input_text == "exit":
             break
-        li = input_text.split(" ")
+        li = re.split(r"(\sr_.+\s)",input_text)
         if len(li) == 3:
-            node1 = li[0]
-            node2 = li[2]
-            relation = li[1]
+            node1 = li[0].strip()
+            node2 = li[2].strip()
+            relation = li[1].strip()
             print(f"node1: {node1}, node2: {node2}, relation: {relation}")
             #print node1 id
             node1_data = getNodeByName(node1)
