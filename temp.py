@@ -2,9 +2,11 @@
 import requests
 import json
 import re
-link_api ="https://jdm-api.demo.lirmm.fr/schema"
+import ast
+import copy
+link_api = "https://jdm-api.demo.lirmm.fr/schema"
 api_get_node_by_name = "https://jdm-api.demo.lirmm.fr/v0/node_by_name/{node_name}"
-get_relation_from ="https://jdm-api.demo.lirmm.fr/v0/relations/from/{node1_name}"
+get_relation_from = "https://jdm-api.demo.lirmm.fr/v0/relations/from/{node1_name}"
 get_relation_between = "https://jdm-api.demo.lirmm.fr/v0/relations/from/{node1_name}/to/{node2_name}"
 get_node_by_id = "https://jdm-api.demo.lirmm.fr/v0/node_by_id/{node_id}"
 nom_a_nombre = {
@@ -46,7 +48,7 @@ nom_a_nombre = {
     "r_meaning/glose": 35,
     "r_infopot": 36,
     "r_telic_role": 37,
-    "r_agentive_role": 38,
+    "r_agentif_role": 38,
     "r_verbe-action": 39,
     "r_action-verbe": 40,
     "r_has_conseq": 41,
@@ -93,93 +95,93 @@ nom_a_nombre = {
     "r_interact_with": 82,
     "r_alias": 83,
     "r_has_euphemisme": 84,
-    "r_der_morpho": 85,
-    "r_has_auteur": 86,
-    "r_has_personnage": 87,
-    "r_can_eat": 88,
-    "r_has_actors": 89,
-    "r_deplac_mode": 90,
-    "r_has_interpret": 91,
-    "r_has_color": 92,
-    "r_has_cible": 93,
-    "r_has_symptomes": 94,
-    "r_has_predecesseur-time": 95,
-    "r_has_diagnostic": 96,
-    "r_has_predecesseur-space": 97,
-    "r_has_successeur-space": 98,
-    "r_has_social_tie_with": 99,
-    "r_tributary": 100,
-    "r_sentiment-1": 101,
-    "r_linked-with": 102,
-    "r_foncteur": 103,
-    "r_comparison": 104,
-    "r_but": 105,
-    "r_but-1": 106,
-    "r_own": 107,
-    "r_own-1": 108,
-    "r_verb_aux": 109,
-    "r_predecesseur-logic": 110,
-    "r_successeur-logic": 111,
-    "r_isa-incompatible": 112,
-    "r_incompatible": 113,
-    "r_node2relnode-in": 114,
-    "r_require": 115,
-    "r_is_instance_of": 116,
-    "r_is_concerned_by": 117,
-    "r_symptomes-1": 118,
-    "r_units": 119,
-    "r_promote": 120,
-    "r_circumstances": 121,
-    "r_has_auteur-1": 122,
-    "r_processus>agent-1": 123,
-    "r_processus>patient-1": 124,
-    "r_processus>instr-1": 125,
-    "r_node2relnode-out": 126,
-    "r_carac_nominale": 127,
-    "r_has_topic": 128,
-    "r_pourvoyeur": 129,
-    "r_compl_agent": 130,
-    "r_has_beneficiaire": 131,
-    "r_descend_de": 132,
-    "r_domain_subst": 133,
-    "r_has_prop": 134,
-    "r_activ_voice": 135,
-    "r_make_use_of": 136,
-    "r_is_used_by": 137,
-    "r_adj-nomprop": 138,
-    "r_nomprop-adj": 139,
-    "r_adj-adv": 140,
-    "r_adv-adj": 141,
-    "r_homophone": 142,
-    "r_potential_confusion_with": 143,
-    "r_concerning": 144,
-    "r_adj>nom": 145,
-    "r_nom>adj": 146,
-    "r_opinion_of": 147,
-    "r_has_value": 148,
-    "r_has_value>": 149,
-    "r_has_value<": 150,
-    "r_sing_form": 151,
-    "r_lieu>origine": 152,
-    "r_depict": 153,
-    "r_has_prop-1": 154,
-    "r_quantificateur-1": 155,
-    "r_promote-1": 156,
-    "r_context": 157,
-    "r_pos_seq": 158,
-    "r_translation": 159,
-    "r_link": 160,
-    "r_cooccurrence": 161,
-    "r_aki": 162,
-    "r_wiki": 163,
-    "r_annotation_exception": 164,
-    "r_annotation": 165,
-    "r_inhib": 166,
-    "r_prev": 167,
-    "r_succ": 168,
-    "r_termgroup": 169,
-    "r_raff_sem-1": 170,
-    "r_learning_model": 171
+    "r_der_morpho": 99,
+    "r_has_auteur": 100,
+    "r_has_personnage": 101,
+    "r_can_eat": 102,
+    "r_has_actors": 103,
+    "r_deplac_mode": 104,
+    "r_has_interpret": 105,
+    "r_has_color": 106,
+    "r_has_cible": 107,
+    "r_has_symptomes": 108,
+    "r_has_predecesseur-time": 109,
+    "r_has_diagnostic": 110,
+    "r_has_predecesseur-space": 111,
+    "r_has_successeur-space": 112,
+    "r_has_social_tie_with": 113,
+    "r_tributary": 114,
+    "r_sentiment-1": 115,
+    "r_linked-with": 116,
+    "r_foncteur": 117,
+    "r_comparison": 118,
+    "r_but": 119,
+    "r_but-1": 120,
+    "r_own": 121,
+    "r_own-1": 122,
+    "r_verb_aux": 123,
+    "r_predecesseur-logic": 124,
+    "r_successeur-logic": 125,
+    "r_isa-incompatible": 126,
+    "r_incompatible": 127,
+    "r_node2relnode-in": 128,
+    "r_require": 129,
+    "r_is_instance_of": 130,
+    "r_is_concerned_by": 131,
+    "r_symptomes-1": 132,
+    "r_units": 133,
+    "r_promote": 134,
+    "r_circumstances": 135,
+    "r_has_auteur-1": 136,
+    "r_processus>agent-1": 137,
+    "r_processus>patient-1": 138,
+    "r_processus>instr-1": 139,
+    "r_node2relnode-out": 140,
+    "r_carac_nominale": 141,
+    "r_has_topic": 142,
+    "r_pourvoyeur": 148,
+    "r_compl_agent": 149,
+    "r_has_beneficiaire": 150,
+    "r_descend_de": 151,
+    "r_domain_subst": 152,
+    "r_has_prop": 153,
+    "r_activ_voice": 154,
+    "r_make_use_of": 155,
+    "r_is_used_by": 156,
+    "r_adj-nomprop": 157,
+    "r_nomprop-adj": 158,
+    "r_adj-adv": 159,
+    "r_adv-adj": 160,
+    "r_homophone": 161,
+    "r_potential_confusion_with": 162,
+    "r_concerning": 163,
+    "r_adj>nom": 164,
+    "r_nom>adj": 165,
+    "r_opinion_of": 166,
+    "r_has_value": 167,
+    "r_has_value>": 168,
+    "r_has_value<": 169,
+    "r_sing_form": 170,
+    "r_lieu>origine": 171,
+    "r_depict": 172,
+    "r_has_prop-1": 173,
+    "r_quantificateur-1": 174,
+    "r_promote-1": 175,
+    "r_context": 200,
+    "r_pos_seq": 222,
+    "r_translation": 333,
+    "r_link": 444,
+    "r_cooccurrence": 555,
+    "r_aki": 666,
+    "r_wiki": 777,
+    "r_annotation_exception": 997,
+    "r_annotation": 998,
+    "r_inhib": 999,
+    "r_prev": 1000,
+    "r_succ": 1001,
+    "r_termgroup": 1002,
+    "r_raff_sem-1": 2000,
+    "r_learning_model": 2001
 }
 nombre_a_nom = {
     0: "r_associated",
@@ -220,7 +222,7 @@ nombre_a_nom = {
     35: "r_meaning/glose",
     36: "r_infopot",
     37: "r_telic_role",
-    38: "r_agentive_role",
+    38: "r_agentif_role",
     39: "r_verbe-action",
     40: "r_action-verbe",
     41: "r_has_conseq",
@@ -267,94 +269,95 @@ nombre_a_nom = {
     82: "r_interact_with",
     83: "r_alias",
     84: "r_has_euphemisme",
-    85: "r_der_morpho",
-    86: "r_has_auteur",
-    87: "r_has_personnage",
-    88: "r_can_eat",
-    89: "r_has_actors",
-    90: "r_deplac_mode",
-    91: "r_has_interpret",
-    92: "r_has_color",
-    93: "r_has_cible",
-    94: "r_has_symptomes",
-    95: "r_has_predecesseur-time",
-    96: "r_has_diagnostic",
-    97: "r_has_predecesseur-space",
-    98: "r_has_successeur-space",
-    99: "r_has_social_tie_with",
-    100: "r_tributary",
-    101: "r_sentiment-1",
-    102: "r_linked-with",
-    103: "r_foncteur",
-    104: "r_comparison",
-    105: "r_but",
-    106: "r_but-1",
-    107: "r_own",
-    108: "r_own-1",
-    109: "r_verb_aux",
-    110: "r_predecesseur-logic",
-    111: "r_successeur-logic",
-    112: "r_isa-incompatible",
-    113: "r_incompatible",
-    114: "r_node2relnode-in",
-    115: "r_require",
-    116: "r_is_instance_of",
-    117: "r_is_concerned_by",
-    118: "r_symptomes-1",
-    119: "r_units",
-    120: "r_promote",
-    121: "r_circumstances",
-    122: "r_has_auteur-1",
-    123: "r_processus>agent-1",
-    124: "r_processus>patient-1",
-    125: "r_processus>instr-1",
-    126: "r_node2relnode-out",
-    127: "r_carac_nominale",
-    128: "r_has_topic",
-    129: "r_pourvoyeur",
-    130: "r_compl_agent",
-    131: "r_has_beneficiaire",
-    132: "r_descend_de",
-    133: "r_domain_subst",
-    134: "r_has_prop",
-    135: "r_activ_voice",
-    136: "r_make_use_of",
-    137: "r_is_used_by",
-    138: "r_adj-nomprop",
-    139: "r_nomprop-adj",
-    140: "r_adj-adv",
-    141: "r_adv-adj",
-    142: "r_homophone",
-    143: "r_potential_confusion_with",
-    144: "r_concerning",
-    145: "r_adj>nom",
-    146: "r_nom>adj",
-    147: "r_opinion_of",
-    148: "r_has_value",
-    149: "r_has_value>",
-    150: "r_has_value<",
-    151: "r_sing_form",
-    152: "r_lieu>origine",
-    153: "r_depict",
-    154: "r_has_prop-1",
-    155: "r_quantificateur-1",
-    156: "r_promote-1",
-    157: "r_context",
-    158: "r_pos_seq",
-    159: "r_translation",
-    160: "r_link",
-    161: "r_cooccurrence",
-    162: "r_aki",
-    163: "r_wiki",
-    164: "r_annotation_exception",
-    165: "r_annotation",
-    166: "r_inhib",
-    167: "r_prev",
-    168: "r_succ",
-    169: "r_termgroup",
-    170: "r_raff_sem-1",
-    171: "r_learning_model"
+    99: "r_der_morpho",
+    100: "r_has_auteur",
+    101: "r_has_personnage",
+    102: "r_can_eat",
+    103: "r_has_actors",
+    104: "r_deplac_mode",
+    105: "r_has_interpret",
+    106: "r_has_color",
+    107: "r_has_cible",
+    108: "r_has_symptomes",
+    109: "r_has_predecesseur-time",
+    110: "r_has_diagnostic",
+    111: "r_has_predecesseur-space",
+    112: "r_has_successeur-space",
+    113: "r_has_social_tie_with",
+    114: "r_tributary",
+    115: "r_sentiment-1",
+    116: "r_linked-with",
+    117: "r_foncteur",
+    118: "r_comparison",
+    119: "r_but",
+    120: "r_but-1",
+    121: "r_own",
+    122: "r_own-1",
+    123: "r_verb_aux",
+    124: "r_predecesseur-logic",
+    125: "r_successeur-logic",
+    126: "r_isa-incompatible",
+    127: "r_incompatible",
+    128: "r_node2relnode-in",
+    129: "r_require",
+    130: "r_is_instance_of",
+    131: "r_is_concerned_by",
+    132: "r_symptomes-1",
+    133: "r_units",
+    134: "r_promote",
+    135: "r_circumstances",
+    136: "r_has_auteur-1",
+    137: "r_processus>agent-1",
+    138: "r_processus>patient-1",
+    139: "r_processus>instr-1",
+    140: "r_node2relnode-out",
+    141: "r_carac_nominale",
+    142: "r_has_topic",
+    148: "r_pourvoyeur",
+    149: "r_compl_agent",
+    150: "r_has_beneficiaire",
+    151: "r_descend_de",
+    152: "r_domain_subst",
+    153: "r_has_prop",
+    154: "r_activ_voice",
+    155: "r_make_use_of",
+    156: "r_is_used_by",
+    157: "r_adj-nomprop",
+    158: "r_nomprop-adj",
+    159: "r_adj-adv",
+    160: "r_adv-adj",
+    161: "r_homophone",
+    162: "r_potential_confusion_with",
+    163: "r_concerning",
+    164: "r_adj>nom",
+    165: "r_nom>adj",
+    166: "r_opinion_of",
+    167: "r_has_value",
+    168: "r_has_value>",
+    169: "r_has_value<",
+    170: "r_sing_form",
+    171: "r_lieu>origine",
+    172: "r_depict",
+    173: "r_has_prop-1",
+    174: "r_quantificateur-1",
+    175: "r_promote-1",
+    200: "r_context",
+    222: "r_pos_seq",
+    333: "r_translation",
+    444: "r_link",
+    555: "r_cooccurrence",
+    666: "r_aki",
+    777: "r_wiki",
+    997: "r_annotation_exception",
+    998: "r_annotation",
+    999: "r_inhib",
+    1000: "r_prev",
+    1001: "r_succ",
+    1002: "r_termgroup",
+    2000: "r_raff_sem-1",
+    2001: "r_learning_model"
 }
+
 
 def translate_relationNBtoNOM(relation):
     nom = "Uknown"
@@ -363,12 +366,15 @@ def translate_relationNBtoNOM(relation):
         return nom
     except Exception:
         return nom
+
+
 """
 def translate_relationNBtoNOM(relation):
     if relation in nombre_a_nom.keys():
         return nombre_a_nom[relation]
     return "Unknown"
 """
+
 
 def requestWrapper(url):
     cache = open("cache.json", "r")
@@ -378,14 +384,16 @@ def requestWrapper(url):
         print("Cache hit")
         return data[url]
     response = requests.get(url)
-    
+
     data[url] = response.text
     cache = open("cache.json", "w")
     cache.write(json.dumps(data))
     return response.text
 
+
 def getNodeByName(node_name):
-    jsonString = requestWrapper(api_get_node_by_name.format(node_name=node_name))
+    jsonString = requestWrapper(
+        api_get_node_by_name.format(node_name=node_name))
     return json.loads(jsonString)
 
 
@@ -407,6 +415,8 @@ response = requests.get(get_relation_from.format(node1_name=node1_name))
 print(response.status_code)
 print(response.text)
 """
+
+
 class Graph:
     def __init__(self):
         self.nodes = {}
@@ -424,19 +434,31 @@ class Graph:
             node1_name = self.nodes[node1_id]
             node2_name = self.nodes[node2_id]
             print(f"{node1_name} {relation} {node2_name} (w={weight})")
+
+    def test_node(self, node_id):
+        return node_id in self.nodes
+
+    def test_edge(self, node1_id, node2_id):
+        for edge in self.edges:
+            if edge[0] == node1_id and edge[1] == node2_id:
+                return True
+        return False
+
     def printTriangles(self, node1, node2):
-        msg=""
+        msg = ""
         for edge in self.edges:
             if edge[0] == node1:
-                typeOfTriangles =""
-                if edge[2]=="r_isa":
+                typeOfTriangles = ""
+                if edge[2] == "r_isa":
                     typeOfTriangles = "deductive"
-                if edge[2]=="r_hypo":
+                if edge[2] == "r_hypo":
                     typeOfTriangles = "inductive"
                 for edge2 in self.edges:
                     if edge2[0] == edge[1] and edge2[1] == node2:
-                        msg=msg+("Triangle "+typeOfTriangles+f" : {self.nodes[node1]} -> {edge[2]} -> {self.nodes[edge[1]]} -> {edge2[2]} -> {self.nodes[node2]}"+"\n")
+                        msg = msg+("Triangle "+typeOfTriangles +
+                                   f" : {self.nodes[node1]} -> {edge[2]} -> {self.nodes[edge[1]]} -> {edge2[2]} -> {self.nodes[node2]}"+"\n")
         return msg
+
 
 """node1= "chat"
 node2 = "calin"
@@ -444,53 +466,162 @@ response = requests.get(get_relation_between.format(node1_name=node1, node2_name
 print(response.status_code)
 print(response.text)"""
 
+
 def sortRelationsInducDeduc(relations):
-    accepted_types=[6,8]
-    relations = [relation for relation in relations if relation["type"] in accepted_types]
+    accepted_types = [6, 8]
+    relations = [
+        relation for relation in relations if relation["type"] in accepted_types]
     relations = sorted(relations, key=lambda x: x["w"], reverse=True)
-    return relations[:3]    
+    return relations[:3]
 
 
 def sortRelationsSym(relations):
-    accepted_types=[5,24]
-    relations = [relation for relation in relations if relation["type"] in accepted_types]
+    accepted_types = [5, 24]
+    relations = [
+        relation for relation in relations if relation["type"] in accepted_types]
     relations = sorted(relations, key=lambda x: x["w"], reverse=True)
-    return relations[:3]    
+    return relations[:3]
+
 
 def create_graphInducDeduc(node1_data, node2_data, relation_wanted):
-    #On initialise le graphe avec neoud de depart et objectif
+    # On initialise le graphe avec neoud de depart et objectif
     graph = Graph()
     graph.add_node(node1_data["id"], node1_data["name"])
     graph.add_node(node2_data["id"], node2_data["name"])
-    #on fait la requete à l'api pour avoir les relations du noeud de depart
-    li_relation = requestWrapper(get_relation_from.format(node1_name=node1_data["name"]))
+    # on fait la requete à l'api pour avoir les relations du noeud de depart
+    li_relation = requestWrapper(
+        get_relation_from.format(node1_name=node1_data["name"]))
     li_relation = json.loads(li_relation)
-    #On trie les requetes qui concernne que les relations inductives et deductives
-    li_relation["relations"]=sortRelationsInducDeduc(li_relation["relations"])
-    #pour chacune de ces relations :
+    # On trie les requetes qui concernne que les relations inductives et deductives
+    li_relation["relations"] = sortRelationsInducDeduc(
+        li_relation["relations"])
+    # pour chacune de ces relations :
     for relation in li_relation["relations"]:
-        #on recupere le noeud de destination de la relation
+        # on recupere le noeud de destination de la relation
         node2Id = relation["node2"]
         node2 = None
         for node in li_relation["nodes"]:
             if node["id"] == node2Id:
                 node2 = node
-        #on recupere les relation entre le noeud de destination et l'objectif
-        li_relation2 = requestWrapper(get_relation_between.format(node1_name=node2["name"], node2_name=node2_data["name"]))
+        # on recupere les relation entre le noeud de destination et l'objectif
+        li_relation2 = requestWrapper(get_relation_between.format(
+            node1_name=node2["name"], node2_name=node2_data["name"]))
         li_relation2 = json.loads(li_relation2)
         if "relations" in li_relation2:
-            #pour chacune de ces relation
+            # pour chacune de ces relation
             for rel in li_relation2["relations"]:
-                #on teste qu'elle sont du bon type
-                if(rel["type"]==nom_a_nombre[relation_wanted]):
-                    #si oui, on ajoute tout au graphe
+                # on teste qu'elle sont du bon type
+                if (rel["type"] == nom_a_nombre[relation_wanted]):
+                    # si oui, on ajoute tout au graphe
                     graph.add_node(node2["id"], node2["name"])
-                    graph.add_edge(node1_data["id"], node2["id"], translate_relationNBtoNOM(relation["type"]), relation["w"])
-                    graph.add_edge(node2["id"], node2_data["id"], translate_relationNBtoNOM(rel["type"]), rel["w"])
+                    graph.add_edge(node1_data["id"], node2["id"], translate_relationNBtoNOM(
+                        relation["type"]), relation["w"])
+                    graph.add_edge(node2["id"], node2_data["id"], translate_relationNBtoNOM(
+                        rel["type"]), rel["w"])
 
-    msg=graph.printTriangles(node1_data["id"], node2_data["id"])
+    msg = graph.printTriangles(node1_data["id"], node2_data["id"])
     print(msg)
     return msg
+
+def tuple_chemin_to_hasahtable(inf, chemin):
+    #inf = list of string
+    #chemin_tuple = lst of dict
+    inf_lst = ast.literal_eval(inf)
+    res=""
+    i=0
+    for e in chemin:
+        res+=(e["name"]+" -> ")
+        if i < len(inf_lst):
+            res+=(inf_lst[i]+" -> ")
+            i+=1
+    return res
+
+
+def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
+    # On initialise le graphe avec neoud de depart et objectif
+    #li_inference = liste de type d'inference, par exemple : [["r_isa", "{r_cible}"],["r_hypo", "{r_cible}"],["r_syn", "{r_cible}"],["{r_cible}", "r_syn"]]
+    graph = Graph()
+    graph.add_node(node1_data["id"], node1_data["name"])
+    graph.add_node(node2_data["id"], node2_data["name"])
+    # on recupère la taille de la l'inference la plus grande pour savoir le nombre de bouble a faire
+    max_size = max([len(inf) for inf in li_Inference])
+    # on initialise un dico associant chaque type d'inference à une liste de chemins possibles
+    chemins = {str(inf): [[node1_data]] for inf in li_Inference}
+    poids_chemin = {}
+    #on initialise le poids de chaque chemin à 0
+    for (inference_courante, chemins_par_type_inf) in chemins.items():
+        for chemin in chemins_par_type_inf:
+            poids_chemin[tuple_chemin_to_hasahtable(inference_courante, chemin)] = 0
+    #on boucle sur la longueur de chaque type d'inférence
+    i = 0
+    while i < max_size:
+        # on fait une deepcopie des chemins pour pouvoir les modifier
+        chemins_copy = copy.deepcopy(chemins)
+        # on boucle sur chaque type d'inférence
+        for (inference_courante, liste_chemins_inference_courante) in chemins_copy.items():
+            #on boucle pour chemin possible
+            for chemin in liste_chemins_inference_courante:
+                #on convertie l'inférence courante de string à liste
+                inference_courante_list = ast.literal_eval(inference_courante)
+                # si on est pas à la fin du chemin ou que ce chemin n'a pas échoué précédement on continue
+                if i < len(inference_courante_list) and i+1 == len(chemin):
+                    try:
+                        # on recupere les relations du noeud de depart
+                        li_relation = requestWrapper(
+                            get_relation_from.format(node1_name=chemin[i]["name"]))
+                        li_relation = json.loads(li_relation)
+                        # on trie les relations pour ne garder que celles qui sont dans l'inférence
+                        li_relation["relations"] = [
+                            relation for relation in li_relation["relations"] if relation["type"] == nom_a_nombre[inference_courante_list[i]]]
+                        # on trie les relations par poids
+                        li_relation["relations"] = sorted(
+                            li_relation["relations"], key=lambda x: x["w"], reverse=True)
+                        #Si on est pas à la fin du chemin, on ne garde que les 5 premières relations
+                        #dans le cas opposé on garde tout pour éviter d'échoué le chemin
+                        if (i+1 != len(inference_courante_list)):
+                            li_relation["relations"] = li_relation["relations"][:3]
+                        # pour chaque relation qui ont passées le filtre
+                        for relation in li_relation["relations"]:
+                            # on recupere le noeud de destination
+                            node2Id = relation["node2"]
+                            node2 = None
+                            for node in li_relation["nodes"]:
+                                if node["id"] == node2Id:
+                                    node2 = node
+                            # si le noeud final du type d'inference, on veut que celui ci soit le noeud de destination, sinon on s'en fiche
+                            if ((i+1 == len(inference_courante_list) and node2["id"] == node2_data["id"]) or i+1 != len(inference_courante_list)):
+                                # on continue le chemin courant avec le noeud que l'ont vient de trouver
+                                new_chemin = chemin + [node2]
+                                # on ajoute ce chemin à la liste des chemins possibles
+                                chemins[str(inference_courante_list)].append(new_chemin)
+                                print(tuple_chemin_to_hasahtable(inference_courante, new_chemin))
+                                #On ajoute le poids du chemin courant au dico des poids
+                                if tuple_chemin_to_hasahtable(inference_courante, chemin) in poids_chemin:
+                                    poids_chemin[tuple_chemin_to_hasahtable(inference_courante, new_chemin)] = poids_chemin[tuple_chemin_to_hasahtable(inference_courante, chemin)] + relation["w"]
+                                else:
+                                    print(f"Warning: Key {tuple_chemin_to_hasahtable(inference_courante, chemin)} not found in poids_chemin.")
+                    except Exception as e:
+                        print("Exception : ", e)
+        #A l'avenir, quand le calculs des poids sera normalisé, mettre un filtre sur les chemins ici, prendre le top5 de tout les types d'inférence
+        i = i+1
+        print(i)
+    #On affiche les chemins et leur poids
+    res=""
+    for (inference_courante, chemin_inf) in chemins.items():
+        inf_lst = ast.literal_eval(inference_courante)
+        for chemin in chemin_inf:
+            if len(chemin) == len(inf_lst)+1:
+                for i in range(len(inf_lst)):
+                    res=res+chemin[i]["name"] + " -> " +inf_lst[i] + " -> "
+                    if i+1 == len(inf_lst):
+                        res=res+chemin[i+1]["name"]
+                # (inf + " : " + chemin)
+                res= res+" : "+str(poids_chemin[tuple_chemin_to_hasahtable(inference_courante, chemin)])+"\n"
+    ##for (inf, chemin_ind) in chemins.items():
+        #for chemin in chemin_ind:
+            #print(str(inf) + " : " + str(chemin))
+        # print(poids_chemin[(inf, chemin)])
+    return res
 
 
 def create_graphSymTri(node1_data, node2_data, relation_wanted):
@@ -498,68 +629,97 @@ def create_graphSymTri(node1_data, node2_data, relation_wanted):
     graph.add_node(node1_data["id"], node1_data["name"])
     graph.add_node(node2_data["id"], node2_data["name"])
 
-    li_relation = requestWrapper(get_relation_from.format(node1_name=node1_data["name"]))
+    li_relation = requestWrapper(
+        get_relation_from.format(node1_name=node1_data["name"]))
     li_relation = json.loads(li_relation)
-    li_relation["relations"]=sortRelationsSym(li_relation["relations"])
+    li_relation["relations"] = sortRelationsSym(li_relation["relations"])
     for relation in li_relation["relations"]:
         node2Id = relation["node2"]
         node2 = None
         for node in li_relation["nodes"]:
             if node["id"] == node2Id:
                 node2 = node
-        li_relation2 = requestWrapper(get_relation_between.format(node1_name=node2["name"], node2_name=node2_data["name"]))
+        li_relation2 = requestWrapper(get_relation_between.format(
+            node1_name=node2["name"], node2_name=node2_data["name"]))
         li_relation2 = json.loads(li_relation2)
         if "relations" in li_relation2:
-            #li_relation2["relations"]=sortRelationsSym(li_relation2["relations"])
+            # li_relation2["relations"]=sortRelationsSym(li_relation2["relations"])
             for rel in li_relation2["relations"]:
-                if(rel["type"]==nom_a_nombre[relation_wanted]):
+                if (rel["type"] == nom_a_nombre[relation_wanted]):
                     graph.add_node(node2["id"], node2["name"])
-                    graph.add_edge(node1_data["id"], node2["id"], translate_relationNBtoNOM(relation["type"]), relation["w"])
-                    graph.add_edge(node2["id"], node2_data["id"], translate_relationNBtoNOM(rel["type"]), rel["w"])
+                    graph.add_edge(node1_data["id"], node2["id"], translate_relationNBtoNOM(
+                        relation["type"]), relation["w"])
+                    graph.add_edge(node2["id"], node2_data["id"], translate_relationNBtoNOM(
+                        rel["type"]), rel["w"])
 
-    msg=graph.printTriangles(node1_data["id"], node2_data["id"])
+    msg = graph.printTriangles(node1_data["id"], node2_data["id"])
     print(msg)
     return msg
-#chat r_isa animal
-#pigeon r_agent-1 voler
+
+
+# chat r_isa animal
+# chat r_agent-1 miauler
+# pigeon r_agent-1 voler
+dicttt = {'("[\'r_isa\', \'r_isa\']", [[{\'id\': 150, \'name\': \'chat\', \'type\': 1, \'w\': 5591, \'c\': 0, \'level\': 84.7367, \'infoid\': None, \'creationdate\': \'2007-06-21\', \'touchdate\': \'2025-02-27T12:14:04\'}]])': 0,
+          '("[\'r_hypo\', \'r_isa\']", [[{\'id\': 150, \'name\': \'chat\', \'type\': 1, \'w\': 5591, \'c\': 0, \'level\': 84.7367, \'infoid\': None, \'creationdate\': \'2007-06-21\', \'touchdate\': \'2025-02-27T12:14:04\'}]])': 0, 
+          '("[\'r_syn\', \'r_isa\']", [[{\'id\': 150, \'name\': \'chat\', \'type\': 1, \'w\': 5591, \'c\': 0, \'level\': 84.7367, \'infoid\': None, \'creationdate\': \'2007-06-21\', \'touchdate\': \'2025-02-27T12:14:04\'}]])': 0}
+
 
 def callFromDiscordSym(input_text):
-        li = input_text.split(" ")
-        if len(li) == 3:
-            node1 = li[0]
-            node2 = li[2]
-            relation = li[1]
-            print(f"node1: {node1}, node2: {node2}, relation: {relation}")
-            #print node1 id
-            node1_data = getNodeByName(node1)
-            node2_data = getNodeByName(node2)
-            return create_graphSymTri(node1_data, node2_data, relation)
+    li = input_text.split(" ")
+    if len(li) == 3:
+        node1 = li[0]
+        node2 = li[2]
+        relation = li[1]
+        print(f"node1: {node1}, node2: {node2}, relation: {relation}")
+        # print node1 id
+        node1_data = getNodeByName(node1)
+        node2_data = getNodeByName(node2)
+        return create_graphSymTri(node1_data, node2_data, relation)
+
 
 def callFromDiscordInduc(input_text):
-        li = input_text.split(" ")
-        if len(li) == 3:
-            node1 = li[0]
-            node2 = li[2]
-            relation = li[1]
-            print(f"node1: {node1}, node2: {node2}, relation: {relation}")
-            #print node1 id
-            node1_data = getNodeByName(node1)
-            node2_data = getNodeByName(node2)
-            return create_graphInducDeduc(node1_data, node2_data, relation)
+    li = input_text.split(" ")
+    if len(li) == 3:
+        node1 = li[0]
+        node2 = li[2]
+        relation = li[1]
+        print(f"node1: {node1}, node2: {node2}, relation: {relation}")
+        # print node1 id
+        node1_data = getNodeByName(node1)
+        node2_data = getNodeByName(node2)
+        return create_graphInducDeduc(node1_data, node2_data, relation)
+
+def callFromDiscordAll(input_text):
+    li = input_text.split(" ")
+    if len(li) == 3:
+        node1 = li[0]
+        node2 = li[2]
+        relation = li[1]
+        print(f"node1: {node1}, node2: {node2}, relation: {relation}")
+        # print node1 id
+        node1_data = getNodeByName(node1)
+        node2_data = getNodeByName(node2)
+        li_infer = '[["r_isa", "{r_cible}"],["r_hypo", "{r_cible}"],["r_syn", "{r_cible}"],["{r_cible}", "r_syn"]]'.format(
+                r_cible=relation)
+        return create_graphGen(node1_data, node2_data,ast.literal_eval(li_infer), relation)
 
 if __name__ == "__main__":
-    print("Hello world")
     while True:
-        input_text = input("entrer une relation entre deux mots:(exit pour quitter) ")
+        input_text = input(
+            "entrer une relation entre deux mots:(exit pour quitter) ")
         if input_text == "exit":
             break
-        li = re.split(r"(\sr_.+\s)",input_text)
+        li = re.split(r"(\sr_.+\s)", input_text)
         if len(li) == 3:
             node1 = li[0].strip()
             node2 = li[2].strip()
             relation = li[1].strip()
             print(f"node1: {node1}, node2: {node2}, relation: {relation}")
-            #print node1 id
+            # print node1 id
             node1_data = getNodeByName(node1)
+            # r_syn       ,["{r_cible}", "r_syn"],["r_syn", "{r_cible}", "r_syn"],["r_syn", "{r_cible}", "r_syn"]
             node2_data = getNodeByName(node2)
-            create_graphSymTri(node1_data, node2_data, relation)
+            li_infer = '[["r_isa", "{r_cible}"],["r_hypo", "{r_cible}"],["r_syn", "{r_cible}"],["{r_cible}", "r_syn"]]'.format(
+                r_cible=relation)
+            create_graphGen(node1_data, node2_data, ast.literal_eval(li_infer), relation)
