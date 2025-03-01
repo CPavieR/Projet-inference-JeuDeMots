@@ -9,6 +9,7 @@ api_get_node_by_name = "https://jdm-api.demo.lirmm.fr/v0/node_by_name/{node_name
 get_relation_from = "https://jdm-api.demo.lirmm.fr/v0/relations/from/{node1_name}"
 get_relation_between = "https://jdm-api.demo.lirmm.fr/v0/relations/from/{node1_name}/to/{node2_name}"
 get_node_by_id = "https://jdm-api.demo.lirmm.fr/v0/node_by_id/{node_id}"
+cache={}
 nom_a_nombre = {
     "r_associated": 0,
     "r_raff_sem": 1,
@@ -377,17 +378,18 @@ def translate_relationNBtoNOM(relation):
 
 
 def requestWrapper(url):
-    cache = open("cache.json", "r")
+    global cache
+    """cache = open("cache.json", "r")
     data = json.load(cache)
-    cache.close()
-    if url in data:
+    cache.close()"""
+    if url in cache:
         print("Cache hit")
-        return data[url]
+        return cache[url]
     response = requests.get(url)
 
-    data[url] = response.text
-    cache = open("cache.json", "w")
-    cache.write(json.dumps(data))
+    cache[url] = response.text
+    """cache = open("cache.json", "w")
+    cache.write(json.dumps(data))"""
     return response.text
 
 
@@ -702,8 +704,13 @@ def callFromDiscordAll(input_text):
         node2_data = getNodeByName(node2)
         li_infer = '[["r_isa", "{r_cible}"],["r_hypo", "{r_cible}"],["r_syn", "{r_cible}"],["{r_cible}", "r_syn"]]'.format(
                 r_cible=relation)
-        return create_graphGen(node1_data, node2_data,ast.literal_eval(li_infer), relation)
-
+        res = create_graphGen(node1_data, node2_data,ast.literal_eval(li_infer), relation)
+        cacheFile = open("cache.json", "w")
+        cacheFile.write(json.dumps(cache))
+        return res
+cacheFile = open("cache.json", "r")
+cache = json.load(cacheFile)
+cacheFile.close()
 if __name__ == "__main__":
     while True:
         input_text = input(
@@ -723,3 +730,5 @@ if __name__ == "__main__":
             li_infer = '[["r_isa", "{r_cible}"],["r_hypo", "{r_cible}"],["r_syn", "{r_cible}"],["{r_cible}", "r_syn"]]'.format(
                 r_cible=relation)
             create_graphGen(node1_data, node2_data, ast.literal_eval(li_infer), relation)
+            cacheFile = open("cache.json", "w")
+            cacheFile.write(json.dumps(cache))
