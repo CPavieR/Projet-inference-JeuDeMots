@@ -1,3 +1,6 @@
 __pycache__
 readme.md
 .gitignore
+printStats.py
+profileOutput
+botDiscord

@@ -20,35 +20,39 @@ async def salut(ctx):
 async def sym(ctx, *, message_content):
     # Capture the content of the message after the command
     processed_content = callFromDiscordSym(message_content)
-
+    ctx.send("une question intéressante, je vais me renseigner :cat2:")
     # Send the processed content back to the channel
     if processed_content != "":
         await ctx.send(processed_content)
     else:
-        await ctx.send("Je n'ai rien trouvé")
+        await ctx.send("Je donne ma langue au chat ! :crying_cat_face:")
 
 @bot.command()
 async def ind(ctx, *, message_content):
     # Capture the content of the message after the command
     processed_content = callFromDiscordInduc(message_content)
-
+    ctx.send("une question intéressante, je vais me renseigner :cat2:")
     # Send the processed content back to the channel
     if(processed_content != ""):
         await ctx.send(processed_content)
     else :
-        await ctx.send("Je n'ai rien trouvé")
+        await ctx.send("Je donne ma langue au chat ! :crying_cat_face:")
 
 @bot.command()
 async def all(ctx, *, message_content):
     # Capture the content of the message after the command
     processed_content = callFromDiscordAll(message_content)
-
+    ctx.send("une question intéressante, je vais me renseigner :cat2:")
     # Send the processed content back to the channel
     if(processed_content != ""):
+        ctx.send("AhAh , je connais la réponse ! :smirk_cat:")
         await ctx.send(processed_content)
     else :
-        await ctx.send("Je n'ai rien trouvé")
+        await ctx.send("Je donne ma langue au chat ! :crying_cat_face:")
 
+@bot.command()
+async def help(ctx, *, message_content):
+    await ctx.send("Pour faire une inferérence sur une relation\n - tapez !ind sujet relation objet pour fair un induction\n - tapez !sym relation pour faire une synonimie\n - tapez !all sujet relation objet pour tout chercher\n")
 
 #callFromDiscordAll
 #read the token from the file
