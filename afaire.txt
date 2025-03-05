@@ -1,3 +1,9 @@
 a faire pour vacances :
 synomymie : triangle et carré
 + début score des chemins
+
+trouver l'annotation d'une relation d'id = XXXXXX
+
+On cherche dans l'api la chaine de charatere de nom "r:XXXXX" r_annot __ANNOT__
+
+certaines relations n'ont pas d'annotations et peuvent retourner vide.
