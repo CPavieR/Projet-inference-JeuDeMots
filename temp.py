@@ -383,7 +383,6 @@ def requestWrapper(url):
     data = json.load(cache)
     cache.close()"""
     if url in cache:
-        print("Cache hit")
         return cache[url]
     response = requests.get(url)
 
@@ -532,10 +531,16 @@ def tuple_chemin_to_hasahtable(inf, chemin):
     res=""
     i=0
     for e in chemin:
-        res+=(e["name"]+" -> ")
+        res+=(e["name"])
+        if i != len(inf_lst):
+            res+=" -> "
         if i < len(inf_lst):
-            res+=(inf_lst[i]+" -> ")
+            res+=(inf_lst[i])
+            if i != len(inf_lst) and i!=0:
+                res+=" -> "
             i+=1
+            if i < len(inf_lst):
+                res+= " -> "
     return res
 
 
