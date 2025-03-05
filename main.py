@@ -211,7 +211,7 @@ if __name__ == "__main__":
             "entrer une relation entre deux mots:(exit pour quitter) ")
         if input_text == "exit":
             break
-        li = re.split(r"(\sr_.+\s)", input_text)
+        li = re.split(r"(\sr_[^\s]+\s)", input_text)
         if len(li) == 3:
             node1 = li[0].strip()
             node2 = li[2].strip()
