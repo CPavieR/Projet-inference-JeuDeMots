@@ -327,47 +327,37 @@ dicttt = {'("[\'r_isa\', \'r_isa\']", [[{\'id\': 150, \'name\': \'chat\', \'type
           '("[\'r_syn\', \'r_isa\']", [[{\'id\': 150, \'name\': \'chat\', \'type\': 1, \'w\': 5591, \'c\': 0, \'level\': 84.7367, \'infoid\': None, \'creationdate\': \'2007-06-21\', \'touchdate\': \'2025-02-27T12:14:04\'}]])': 0}
 
 
-def callFromDiscordSym(input_text):
-    li = input_text.split(" ")
+def callFromDiscord(input_text,li_infer):
+    li = re.split(r"(\sr_.+\s)", input_text)
     if len(li) == 3:
-        node1 = li[0]
-        node2 = li[2]
-        relation = li[1]
+        node1 = li[0].strip()
+        node2 = li[2].strip()
+        relation = li[1].strip()
         print(f"node1: {node1}, node2: {node2}, relation: {relation}")
         # print node1 id
         node1_data = getNodeByName(node1)
+        # r_syn       ,["{r_cible}", "r_syn"],["r_syn", "{r_cible}", "r_syn"],["r_syn", "{r_cible}", "r_syn"]
         node2_data = getNodeByName(node2)
-        return create_graphSymTri(node1_data, node2_data, relation)
-
-
-def callFromDiscordInduc(input_text):
-    li = input_text.split(" ")
-    if len(li) == 3:
-        node1 = li[0]
-        node2 = li[2]
-        relation = li[1]
-        print(f"node1: {node1}, node2: {node2}, relation: {relation}")
-        # print node1 id
-        node1_data = getNodeByName(node1)
-        node2_data = getNodeByName(node2)
-        return create_graphInducDeduc(node1_data, node2_data, relation)
-
-def callFromDiscordAll(input_text):
-    li = input_text.split(" ")
-    if len(li) == 3:
-        node1 = li[0]
-        node2 = li[2]
-        relation = li[1]
-        print(f"node1: {node1}, node2: {node2}, relation: {relation}")
-        # print node1 id
-        node1_data = getNodeByName(node1)
-        node2_data = getNodeByName(node2)
-        li_infer = '[["r_isa", "{r_cible}"],["r_hypo", "{r_cible}"],["r_syn", "{r_cible}"],["{r_cible}", "r_syn"]]'.format(
-                r_cible=relation)
-        res = create_graphGen(node1_data, node2_data,ast.literal_eval(li_infer), relation)
+        li_infer= li_infer.format(
+            r_cible=relation)
+        res=create_graphGen(node1_data, node2_data, ast.literal_eval(li_infer), relation)
         cacheFile = open("cache.json", "w")
         cacheFile.write(json.dumps(cache))
         return res
+
+def callFromDiscordSym(input_text):
+    li_infer = '[["r_syn", "{r_cible}"],["{r_cible}", "r_syn"]]'
+    return callFromDiscord(input_text,li_infer)
+
+
+def callFromDiscordInduc(input_text):
+    li_infer = '[["r_isa", "{r_cible}"],["r_hypo", "{r_cible}"]]'
+    return callFromDiscord(input_text,li_infer)
+
+def callFromDiscordAll(input_text):
+    li_infer = '[["r_isa", "{r_cible}"],["r_hypo", "{r_cible}"],["r_syn", "{r_cible}"],["{r_cible}", "r_syn"]]'
+    return callFromDiscord(input_text,li_infer)
+
 cacheFile = open("cache.json", "r")
 cache = json.load(cacheFile)
 cacheFile.close()
