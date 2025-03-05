@@ -6,6 +6,10 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
+client = discord.Client(
+    intents=intents,
+    heartbeat_timeout=300
+)
 
 
 @bot.event
@@ -22,8 +26,8 @@ async def salut(ctx):
 @bot.command()
 async def sym(ctx, *, message_content):
     # Capture the content of the message after the command
+    await ctx.send("une question intéressante, je vais me renseigner :cat2:")
     processed_content = callFromDiscordSym(message_content)
-    #await ctx.send("une question intéressante, je vais me renseigner :cat2:")
     # Send the processed content back to the channel
     if processed_content != "":
         await ctx.send(processed_content)
@@ -34,10 +38,11 @@ async def sym(ctx, *, message_content):
 @bot.command()
 async def ind(ctx, *, message_content):
     # Capture the content of the message after the command
+    await ctx.send("une question intéressante, je vais me renseigner :cat2:")
     processed_content = callFromDiscordInduc(message_content)
-    #await ctx.send("une question intéressante, je vais me renseigner :cat2:")
     # Send the processed content back to the channel
     if (processed_content != ""):
+        await ctx.send("AhAh , je connais la réponse ! :smirk_cat:")
         await ctx.send(processed_content)
     else:
         await ctx.send("Je donne ma langue au chat ! :crying_cat_face:")
@@ -46,11 +51,11 @@ async def ind(ctx, *, message_content):
 @bot.command()
 async def all(ctx, *, message_content):
     # Capture the content of the message after the command
+    await ctx.send("une question intéressante, je vais me renseigner :cat2:")
     processed_content = callFromDiscordAll(message_content)
-    #await ctx.send("une question intéressante, je vais me renseigner :cat2:")
     # Send the processed content back to the channel
     if (processed_content != ""):
-        #ctx.send("AhAh , je connais la réponse ! :smirk_cat:")
+        await ctx.send("AhAh , je connais la réponse ! :smirk_cat:")
         await ctx.send(processed_content)
     else:
         await ctx.send("Je donne ma langue au chat ! :crying_cat_face:")

@@ -1,4 +1,5 @@
 # https://jdm-api.demo.lirmm.fr/schema
+import math
 import requests
 import json
 import re
@@ -75,7 +76,7 @@ def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
     for (inference_courante, chemins_par_type_inf) in chemins.items():
         for chemin in chemins_par_type_inf:
             poids_chemin[tuple_chemin_to_hasahtable(
-                inference_courante, chemin)] = 0
+                inference_courante, chemin)] = 1
     # on boucle sur la longueur de chaque type d'inférence
     i = 0
     while i < max_size:
@@ -125,8 +126,14 @@ def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
                                     inference_courante, new_chemin))
                                 # On ajoute le poids du chemin courant au dico des poids
                                 if tuple_chemin_to_hasahtable(inference_courante, chemin) in poids_chemin:
-                                    poids_chemin[tuple_chemin_to_hasahtable(inference_courante, new_chemin)] = poids_chemin[tuple_chemin_to_hasahtable(
-                                        inference_courante, chemin)] + relation["w"]
+                                    ancien_poids = poids_chemin[tuple_chemin_to_hasahtable(
+                                        inference_courante, chemin)]
+                                    taille_ancienChemin = len(chemin)
+                                    log_ancien_poids = math.log(ancien_poids)
+                                    ancien_poids_sum = log_ancien_poids*taille_ancienChemin
+                                    nouveau_poids = math.exp((ancien_poids_sum+math.log(relation["w"]))/(taille_ancienChemin+1))
+                                    poids_chemin[tuple_chemin_to_hasahtable(inference_courante, new_chemin)] = nouveau_poids
+                                    
                                 else:
                                     print(
                                         f"Warning: Key {tuple_chemin_to_hasahtable(inference_courante, chemin)} not found in poids_chemin.")
