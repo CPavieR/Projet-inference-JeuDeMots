@@ -17,3 +17,4 @@ soit A R1 C et C R2 B -> on doit tester deux B ont le même raffinement
 => {Ci}={Cj} ou alors Ci inter Cj différent de 0
 
 annotation contrastif d'une relation R -> la relation R est bonne pour un des sens du mots mais fausse pour un autre sens du mot
+annotation : figuré (au sens figuré)
