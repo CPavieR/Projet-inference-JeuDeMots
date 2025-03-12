@@ -7,3 +7,13 @@ trouver l'annotation d'une relation d'id = XXXXXX
 On cherche dans l'api la chaine de charatere de nom "r:XXXXX" r_annot __ANNOT__
 
 certaines relations n'ont pas d'annotations et peuvent retourner vide.
+
+
+Raffinement & contraste : usage du terme/sens (avocat justice, avocat légume)
+glose : définitions
+C est polyseùique = plusieurs rellations r_raff id=1
+
+soit A R1 C et C R2 B -> on doit tester deux B ont le même raffinement
+=> {Ci}={Cj} ou alors Ci inter Cj différent de 0
+
+annotation contrastif d'une relation R -> la relation R est bonne pour un des sens du mots mais fausse pour un autre sens du mot

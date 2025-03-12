@@ -6,16 +6,17 @@ class HelperJDM:
 
     @staticmethod
     def normalize(relations : list):
-        # init max with first value
-        weight_max = relations[0]["w"]
-        # loop to find true max
-        for r in relations:
-            if r["w"] > weight_max:
-                weight_max = r["w"]
+        if(len(relations) != 0):
+            # init max with first value
+            weight_max = relations[0]["w"]
+            # loop to find true max
+            for r in relations:
+                if r["w"] > weight_max:
+                    weight_max = r["w"]
 
-        # divides the weights by the max
-        for r in relations:
-            r["w"] /= weight_max
+            # divides the weights by the max
+            for r in relations:
+                r["w"] /= weight_max
 
 
 

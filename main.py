@@ -131,7 +131,11 @@ def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
                                     taille_ancienChemin = len(chemin)
                                     log_ancien_poids = math.log(ancien_poids)
                                     ancien_poids_sum = log_ancien_poids*taille_ancienChemin
-                                    nouveau_poids = math.exp((ancien_poids_sum+math.log(relation["w"]))/(taille_ancienChemin+1))
+                                    if(relation["w"]>0):
+                                        fact = 1
+                                    else:
+                                        fact = -1
+                                    nouveau_poids = math.exp((ancien_poids_sum+(fact*math.log(abs(relation["w"]))))/(taille_ancienChemin+1))
                                     poids_chemin[tuple_chemin_to_hasahtable(inference_courante, new_chemin)] = nouveau_poids
                                     
                                 else:
