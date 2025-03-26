@@ -13,7 +13,6 @@ get_relation_between = "https://jdm-api.demo.lirmm.fr/v0/relations/from/{node1_n
 get_node_by_id = "https://jdm-api.demo.lirmm.fr/v0/node_by_id/{node_id}"
 cache = {}
 
-
 def translate_relationNBtoNOM(relation):
     nom = "Uknown"
     try:
@@ -46,22 +45,28 @@ def getNodeByName(node_name):
 
 def tuple_chemin_to_hasahtable(inf, chemin):
     # inf = list of string
-    # chemin_tuple = lst of dict
+    # chemin = list of dict
     inf_lst = ast.literal_eval(inf)
     res = ""
     i = 0
+    annotation_added = False
+    
     for e in chemin:
-        res += (e["name"])
-        if i != len(inf_lst):
-            res += " -> "
+        if "annotation" in e and not annotation_added:
+            res += e["annotation"] + " : "
+            annotation_added = True
+        
+        res += e["name"]
+
         if i < len(inf_lst):
-            res += (inf_lst[i])
-            if i != len(inf_lst) and i != 0:
-                res += " -> "
+            res += " -> " + str(inf_lst[i])
             i += 1
-            if i < len(inf_lst):
-                res += " -> "
+        
+        if i < len(inf_lst) or e != chemin[-1]:
+            res += " -> "
+
     return res
+
 
 
 def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
@@ -107,6 +112,28 @@ def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
                         # dans le cas opposé on garde tout pour éviter d'échoué le chemin
                         if (i+1 != len(inference_courante_list)):
                             li_relation["relations"] = li_relation["relations"][:3]
+                        # on recupere les annotations des relations
+                        for relation in li_relation["relations"]:
+                            annot=":r" + str(relation["id"])
+                            li_relation_for_annotation=requestWrapper(get_relation_from.format(node1_name=annot))
+                            li_relation_for_annotation=json.loads(li_relation_for_annotation)
+                            annotation_name="Pas d'annotation"
+                            li_annotation=[]
+                            dico_name_annot = {}
+                            if "relations" in li_relation_for_annotation:
+                                for relation in li_relation_for_annotation["relations"]:
+                                    if relation["type"] == HelperJDM.nom_a_nombre['r_annotation']:
+                                        li_annotation.append(relation)
+                                for node in li_relation_for_annotation["nodes"]:
+                                    dico_name_annot[node["id"]] = node
+                            if(len(li_annotation)>0):
+                                li_annotation = sorted(
+                                    li_annotation, key=lambda x: x["w"], reverse=True)
+                                annotation=li_annotation[0]["node2"]
+                                if annotation in dico_name_annot:
+                                    annotation_name = dico_name_annot[annotation]["name"]
+                                else :
+                                    annotation_name = "Pas d'annotation"
                         # pour chaque relation qui ont passées le filtre
                         for relation in li_relation["relations"]:
                             # on recupere le noeud de destination
@@ -115,6 +142,7 @@ def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
                             for node in li_relation["nodes"]:
                                 if node["id"] == node2Id:
                                     node2 = node
+                            node2["annotation"] = annotation_name
                             # si le noeud final du type d'inference, on veut que celui ci soit le noeud de destination, sinon on s'en fiche
                             if ((i+1 == len(inference_courante_list) and node2["id"] == node2_data["id"]) or i+1 != len(inference_courante_list)):
                                 # on continue le chemin courant avec le noeud que l'ont vient de trouver
