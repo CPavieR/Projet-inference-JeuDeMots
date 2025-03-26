@@ -6,6 +6,7 @@ import re
 import ast
 import copy
 from lib_helpers import HelperJDM
+import requests_cache
 link_api = "https://jdm-api.demo.lirmm.fr/schema"
 api_get_node_by_name = "https://jdm-api.demo.lirmm.fr/v0/node_by_name/{node_name}"
 get_relation_from = "https://jdm-api.demo.lirmm.fr/v0/relations/from/{node1_name}"
@@ -13,7 +14,8 @@ get_relation_between = "https://jdm-api.demo.lirmm.fr/v0/relations/from/{node1_n
 get_node_by_id = "https://jdm-api.demo.lirmm.fr/v0/node_by_id/{node_id}"
 cache = {}
 
-
+requests_cache.install_cache('jdm_cache', backend='sqlite', expire_after=None)
+session = requests.Session()
 def translate_relationNBtoNOM(relation):
     nom = "Uknown"
     try:
@@ -28,13 +30,13 @@ def requestWrapper(url):
     """cache = open("cache.json", "r")
     data = json.load(cache)
     cache.close()"""
-    if url in cache:
-        return cache[url]
-    response = requests.get(url)
-
-    cache[url] = response.text
-    """cache = open("cache.json", "w")
-    cache.write(json.dumps(data))"""
+    #if url in cache:
+    #    return cache[url]
+    #response = requests.get(url)
+    response = session.get(url)
+    #cache[url] = response.text
+    #"""cache = open("cache.json", "w")
+    #cache.write(json.dumps(data))"""
     return response.text
 
 
@@ -63,6 +65,13 @@ def tuple_chemin_to_hasahtable(inf, chemin):
                 res += " -> "
     return res
 
+def directRelation(node1, node2, wanted_relation):
+    li_relation = requestWrapper(get_relation_between.format(
+        node1_name=node1["name"], node2_name=node2["name"]))
+    li_relation = json.loads(li_relation)
+    li_relation["relations"] = [
+        relation for relation in li_relation["relations"] if relation["type"] == wanted_relation]
+    return li_relation
 
 def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
     # On initialise le graphe avec neoud de depart et objectif
@@ -98,6 +107,14 @@ def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
                         # on trie les relations pour ne garder que celles qui sont dans l'inférence
                         li_relation["relations"] = [
                             relation for relation in li_relation["relations"] if relation["type"] == HelperJDM.nom_a_nombre[inference_courante_list[i]]]
+                        #On enlève les relations qui ont un node2 qui commence par "::" (relation interne ?)
+                        dico_name = {}
+                        for node in li_relation["nodes"]:
+                            dico_name[node["id"]] = node
+                        
+                        li_relation["relations"] = [
+                            relation for relation in li_relation["relations"] if relation["node2"] in dico_name and not dico_name[relation["node2"]]["name"].startswith("::")]
+                        
                        # on normalise les poids
                         HelperJDM.normalize(li_relation["relations"])
                         # on trie les relations par poids
@@ -111,10 +128,9 @@ def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
                         for relation in li_relation["relations"]:
                             # on recupere le noeud de destination
                             node2Id = relation["node2"]
-                            node2 = None
-                            for node in li_relation["nodes"]:
-                                if node["id"] == node2Id:
-                                    node2 = node
+                            node2=None
+                            if node2Id in dico_name:
+                                node2 = dico_name[node2Id]
                             # si le noeud final du type d'inference, on veut que celui ci soit le noeud de destination, sinon on s'en fiche
                             if ((i+1 == len(inference_courante_list) and node2["id"] == node2_data["id"]) or i+1 != len(inference_courante_list)):
                                 # on continue le chemin courant avec le noeud que l'ont vient de trouver
@@ -135,7 +151,10 @@ def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
                                         fact = 1
                                     else:
                                         fact = -1
-                                    nouveau_poids = math.exp((ancien_poids_sum+(fact*math.log(abs(relation["w"]))))/(taille_ancienChemin+1))
+                                    if (relation["w"]!=0):
+                                        nouveau_poids = math.exp((ancien_poids_sum+(fact*math.log(abs(relation["w"]))))/(taille_ancienChemin+1))
+                                    else:
+                                        nouveau_poids = 0
                                     poids_chemin[tuple_chemin_to_hasahtable(inference_courante, new_chemin)] = nouveau_poids
                                     
                                 else:
@@ -151,7 +170,7 @@ def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
         for (inference_courante, liste_chemins_inference_courante) in chemins_copy.items():
             for chemin in liste_chemins_inference_courante:
                 #si le chemin est terminé ou alors on continue de le construire
-                if (chemin[-1] == node2_data or len(chemin) == i+2):
+                if (chemin[-1]["id"] == node2_data["id"] or len(chemin) == i+2):
                     #on ajoute le poids du chemin à la liste des poids à trier
                     li_poids_a_trier.append(
                         poids_chemin[tuple_chemin_to_hasahtable(inference_courante, chemin)])
@@ -162,9 +181,9 @@ def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
                         poids_chemin.pop(
                             tuple_chemin_to_hasahtable(inference_courante, chemin))
         #si on a plus de 10 chemins, definie un seuil pour garder les 10 chemins avec les meilleurs scores
-        if(len(li_poids_a_trier) >= 10):
+        if(len(li_poids_a_trier) >= 20):
             li_poids_a_trier.sort()
-            seuil = li_poids_a_trier[-10]
+            seuil = li_poids_a_trier[-20]
         #si il y a moins de 10 chemins, on garde tout
         else:
             seuil= 0
@@ -239,9 +258,9 @@ def callFromDiscordAll(input_text):
     return callFromDiscord(input_text, li_infer)
 
 
-cacheFile = open("cache.json", "r")
+"""cacheFile = open("cache.json", "r")
 cache = json.load(cacheFile)
-cacheFile.close()
+cacheFile.close()"""
 if __name__ == "__main__":
     while True:
         input_text = input(
@@ -258,9 +277,12 @@ if __name__ == "__main__":
             node1_data = getNodeByName(node1)
             # r_syn       ,["{r_cible}", "r_syn"],["r_syn", "{r_cible}", "r_syn"],["r_syn", "{r_cible}", "r_syn"]
             node2_data = getNodeByName(node2)
-            li_infer = '[["r_isa", "{r_cible}"],["r_hypo", "{r_cible}"],["r_syn", "{r_cible}"],["{r_cible}", "r_syn"]]'.format(
+            li_infer = '[["r_isa", "{r_cible}"],["r_hypo", "{r_cible}"],["r_syn", "{r_cible}"],["{r_cible}", "r_syn"],["{r_cible}"]]'.format(
                 r_cible=relation)
-            create_graphGen(node1_data, node2_data,
+            res = create_graphGen(node1_data, node2_data,
                             ast.literal_eval(li_infer), relation)
-            cacheFile = open("cache.json", "w")
-            cacheFile.write(json.dumps(cache))
+            print("-------------------Result-----------------------")
+            print(res)
+            print("------------------Please stay indoors--------------------")
+            #cacheFile = open("cache.json", "w")
+            #cacheFile.write(json.dumps(cache))
