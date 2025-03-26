@@ -111,7 +111,7 @@ def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
                         # Si on est pas à la fin du chemin, on ne garde que les 5 premières relations
                         # dans le cas opposé on garde tout pour éviter d'échoué le chemin
                         if (i+1 != len(inference_courante_list)):
-                            li_relation["relations"] = li_relation["relations"][:3]
+                            li_relation["relations"] = li_relation["relations"][:20]
                         # on recupere les annotations des relations
                         for relation in li_relation["relations"]:
                             annot=":r" + str(relation["id"])
@@ -171,8 +171,41 @@ def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
                                         f"Warning: Key {tuple_chemin_to_hasahtable(inference_courante, chemin)} not found in poids_chemin.")
                     except Exception as e:
                         print("Exception : ", e)
-        # A l'avenir, quand le calculs des poids sera normalisé, mettre un filtre sur les chemins ici, prendre le top5 de tout les types d'inférence
-        i = i+1
+        # on supprime les chemins qui ont un poids trop faible
+        #on copie les chemins pour pouvoir les modifier
+        chemins_copy = copy.deepcopy(chemins)
+        #on initialise une liste des poids à trier correspondant aux poids des chemins valides (cad qui soit sont terminé, soit qui sont en cours de construction)
+        li_poids_a_trier = []
+        for (inference_courante, liste_chemins_inference_courante) in chemins_copy.items():
+            for chemin in liste_chemins_inference_courante:
+                #si le chemin est terminé ou alors on continue de le construire
+                if (chemin[-1] == node2_data or len(chemin) == i+2):
+                    #on ajoute le poids du chemin à la liste des poids à trier
+                    li_poids_a_trier.append(
+                        poids_chemin[tuple_chemin_to_hasahtable(inference_courante, chemin)])
+                else:
+                    #sinon on supprime le chemin
+                    chemins[inference_courante].remove(chemin)
+                    if tuple_chemin_to_hasahtable(inference_courante, chemin) in poids_chemin:
+                        poids_chemin.pop(
+                            tuple_chemin_to_hasahtable(inference_courante, chemin))
+        #si on a plus de 10 chemins, definie un seuil pour garder les 10 chemins avec les meilleurs scores
+        if(len(li_poids_a_trier) >= 10):
+            li_poids_a_trier.sort()
+            seuil = li_poids_a_trier[-10]
+        #si il y a moins de 10 chemins, on garde tout
+        else:
+            seuil= 0
+        #on refait une copie des chemins pour bien prendre en compte les suppressions de la boucle précédente
+        chemins_copy = copy.deepcopy(chemins)
+        for (inference_courante, liste_chemins_inference_courante) in chemins_copy.items():
+            for chemin in liste_chemins_inference_courante:
+                #si le poids du chemin est inférieur au seuil, on supprime le chemin
+                if (poids_chemin[tuple_chemin_to_hasahtable(inference_courante, chemin)] < seuil):
+                    chemins[inference_courante].remove(chemin)
+                    poids_chemin.pop(
+                        tuple_chemin_to_hasahtable(inference_courante, chemin))
+        i=i+1
         print(i)
     # On affiche les chemins et leur poids
     res = ""
