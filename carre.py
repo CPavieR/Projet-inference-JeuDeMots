@@ -34,7 +34,6 @@ def requestWrapper(url):
     response = requests.get(url)
 
     cache[url] = response.text
-
     return response.text
 
 
@@ -152,7 +151,15 @@ nodeDepart["name"], n1["name"], nodeBut["name"], n2["name"], n1["name"], relatio
     print(resultats)     
     return resultats;
 
-
+def callFromDiscordCarre(input_text):
+    li = re.split(r"(\sr_.+\s)", input_text)
+    if len(li) == 3:
+        node1 = li[0].strip()
+        node2 = li[2].strip()
+        relation = li[1].strip()
+        print(f"node1: {node1}, node2: {node2}, relation: {relation}")
+        res = carre(li[0],li[1],li[2])
+        return res
 
 
 cacheFile = open("cache.json", "r")
