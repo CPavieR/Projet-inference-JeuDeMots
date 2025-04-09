@@ -113,6 +113,156 @@ def check_isa_relation_with_refinements(node1, node2):
     # Si on n'a pas trouvé de raffinement commun, on retourne False
     return False
 
+def update_poids_chemin(poids_chemin, inference_courante, chemin, relation, annotation_name, new_chemin):
+    """
+    Updates the poids_chemin dictionary with the new weight for the given chemin.
+
+    Args:
+        poids_chemin (dict): Dictionary containing chemin weights.
+        inference_courante (str): Current inference as a string.
+        chemin (list): Current chemin (path).
+        relation (dict): Relation dictionary containing weight information.
+        annotation_name (str): Annotation name for the relation.
+        new_chemin (list): New chemin to update the weight for.
+    """
+    key = tuple_chemin_to_hasahtable(inference_courante, chemin)
+    if key in poids_chemin:
+        ancien_poids = poids_chemin[key]
+        taille_ancienChemin = len(chemin)
+        log_ancien_poids = math.log(ancien_poids)
+        ancien_poids_sum = log_ancien_poids * taille_ancienChemin
+
+        fact = 1 if relation["w"] > 0 else -1
+        if relation["w"] != 0:
+            nouveau_poids = math.exp(
+                (ancien_poids_sum + (fact * math.log(abs(relation["w"])))) / (taille_ancienChemin + 1)
+            )
+        else:
+            nouveau_poids = 0
+
+        print("ancien poids : ", nouveau_poids)
+        nouveau_poids = gestion_poids(annotation_name, nouveau_poids)
+        print("nouveau poids : ", nouveau_poids)
+
+        poids_chemin[tuple_chemin_to_hasahtable(inference_courante, new_chemin)] = nouveau_poids
+    else:
+        print(f"Warning: Key {key} not found in poids_chemin. This should never happen")
+
+def traiter_relation(relation, dico_name, annotation_name, i, inference_courante_list, node2_data, chemin, chemins, poids_chemin, inference_courante):
+    """
+    Processes a relation and updates the chemins and poids_chemin dictionaries.
+
+    Args:
+        relation (dict): The relation being processed.
+        dico_name (dict): Dictionary mapping node IDs to node data.
+        annotation_name (str): Annotation name for the relation.
+        i (int): Current index in the inference list.
+        inference_courante_list (list): Current inference as a list.
+        node2_data (dict): Data of the target node.
+        chemin (list): Current chemin (path).
+        chemins (dict): Dictionary of chemins for each inference type.
+        poids_chemin (dict): Dictionary of chemin weights.
+        inference_courante (str): Current inference as a string.
+    """
+    # Retrieve the destination node
+    node2Id = relation["node2"]
+    node2 = {}
+    if node2Id in dico_name:
+        node2 = dico_name[node2Id]
+    node2["annotation"] = annotation_name
+
+    # Check if the destination node matches the inference criteria
+    if ((i + 1 == len(inference_courante_list) and node2["id"] == node2_data["id"]) or i + 1 != len(inference_courante_list)):
+        # Continue the current path with the found node
+        new_chemin = chemin + [node2]
+        # Add this path to the list of possible paths
+        chemins[str(inference_courante_list)].append(new_chemin)
+        print(tuple_chemin_to_hasahtable(inference_courante, new_chemin))
+        # Update the weight of the current path in the poids_chemin dictionary
+        update_poids_chemin(
+            poids_chemin,
+            inference_courante,
+            chemin,
+            relation,
+            annotation_name,
+            new_chemin
+        )
+
+def afficher_chemins_et_poids(chemins, poids_chemin):
+    """
+    Formats and returns the paths and their weights.
+
+    Args:
+        chemins (dict): Dictionary of paths for each inference type.
+        poids_chemin (dict): Dictionary of chemin weights.
+
+    Returns:
+        str: Formatted string of paths and their weights.
+    """
+    res = ""
+    for (inference_courante, chemin_inf) in chemins.items():
+        inf_lst = ast.literal_eval(inference_courante)
+        for chemin in chemin_inf:
+            if len(chemin) == len(inf_lst) + 1:
+                for i in range(len(inf_lst)):
+                    res += chemin[i]["name"] + " -> " + inf_lst[i] + " -> "
+                    if i + 1 == len(inf_lst):
+                        res += chemin[i + 1]["name"]
+                res += " : " + str(poids_chemin[tuple_chemin_to_hasahtable(
+                    inference_courante, chemin)]) + "\n"
+    return res
+
+def traiter_relation_et_annotation(relation, dico_name, i, inference_courante_list, node2_data, chemin, chemins, poids_chemin, inference_courante, get_relation_from):
+    """
+    Handles the annotation extraction and processes the relation.
+
+    Args:
+        relation (dict): The relation being processed.
+        dico_name (dict): Dictionary mapping node IDs to node data.
+        i (int): Current index in the inference list.
+        inference_courante_list (list): Current inference as a list.
+        node2_data (dict): Data of the target node.
+        chemin (list): Current chemin (path).
+        chemins (dict): Dictionary of chemins for each inference type.
+        poids_chemin (dict): Dictionary of chemin weights.
+        inference_courante (str): Current inference as a string.
+        get_relation_from (str): API endpoint to fetch relations.
+    """
+    annot = ":r" + str(relation["id"])
+    li_relation_for_annotation = requestWrapper(get_relation_from.format(node1_name=annot))
+    li_relation_for_annotation = json.loads(li_relation_for_annotation)
+    annotation_name = "Pas d'annotation"
+    li_annotation = []
+    dico_name_annot = {}
+
+    if "relations" in li_relation_for_annotation:
+        for relation_annot in li_relation_for_annotation["relations"]:
+            if relation_annot["type"] == HelperJDM.nom_a_nombre['r_annotation']:
+                li_annotation.append(relation_annot)
+        for node in li_relation_for_annotation["nodes"]:
+            dico_name_annot[node["id"]] = node
+
+    if len(li_annotation) > 0:
+        li_annotation = sorted(li_annotation, key=lambda x: x["w"], reverse=True)
+        annotation = li_annotation[0]["node2"]
+        if annotation in dico_name_annot:
+            annotation_name = dico_name_annot[annotation]["name"]
+        else:
+            annotation_name = "Pas d'annotation"
+
+    traiter_relation(
+        relation,
+        dico_name,
+        annotation_name,
+        i,
+        inference_courante_list,
+        node2_data,
+        chemin,
+        chemins,
+        poids_chemin,
+        inference_courante
+    )
+
 def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
     # On initialise le graphe avec neoud de depart et objectif
     # li_inference = liste de type d'inference, par exemple : [["r_isa", "{r_cible}"],["r_hypo", "{r_cible}"],["r_syn", "{r_cible}"],["{r_cible}", "r_syn"]]
@@ -144,6 +294,8 @@ def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
                         li_relation = requestWrapper(
                             get_relation_from.format(node1_name=chemin[i]["name"]))
                         li_relation = json.loads(li_relation)
+                        
+                        ################### Trie des relations ###################
                         # on trie les relations pour ne garder que celles qui sont dans l'inférence
                         li_relation["relations"] = [
                             relation for relation in li_relation["relations"] if relation["type"] == HelperJDM.nom_a_nombre[inference_courante_list[i]]]
@@ -164,67 +316,21 @@ def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
                         # dans le cas opposé on garde tout pour éviter d'échoué le chemin
                         if (i+1 != len(inference_courante_list)):
                             li_relation["relations"] = li_relation["relations"][:3]
+                        ############# Gestion des annotations #############
                         # on recupere les annotations des relations
                         for relation in li_relation["relations"]:
-                            annot=":r" + str(relation["id"])
-                            li_relation_for_annotation=requestWrapper(get_relation_from.format(node1_name=annot))
-                            li_relation_for_annotation=json.loads(li_relation_for_annotation)
-                            annotation_name="Pas d'annotation"
-                            li_annotation=[]
-                            dico_name_annot = {}
-                            if "relations" in li_relation_for_annotation:
-                                for relation in li_relation_for_annotation["relations"]:
-                                    if relation["type"] == HelperJDM.nom_a_nombre['r_annotation']:
-                                        li_annotation.append(relation)
-                                for node in li_relation_for_annotation["nodes"]:
-                                    dico_name_annot[node["id"]] = node
-                            if(len(li_annotation)>0):
-                                li_annotation = sorted(
-                                    li_annotation, key=lambda x: x["w"], reverse=True)
-                                annotation=li_annotation[0]["node2"]
-                                if annotation in dico_name_annot:
-                                    annotation_name = dico_name_annot[annotation]["name"]
-                                else :
-                                    annotation_name = "Pas d'annotation"
-                        # pour chaque relation qui ont passées le filtre
-                        for relation in li_relation["relations"]:
-                            # on recupere le noeud de destination
-                            node2Id = relation["node2"]
-                            node2={}
-                            if node2Id in dico_name:
-                                node2 = dico_name[node2Id]
-                            node2["annotation"] = annotation_name
-                            # si le noeud final du type d'inference, on veut que celui ci soit le noeud de destination, sinon on s'en fiche
-                            if ((i+1 == len(inference_courante_list) and node2["id"] == node2_data["id"]) or i+1 != len(inference_courante_list)):
-                                # on continue le chemin courant avec le noeud que l'ont vient de trouver
-                                new_chemin = chemin + [node2]
-                                # on ajoute ce chemin à la liste des chemins possibles
-                                chemins[str(inference_courante_list)
-                                        ].append(new_chemin)
-                                print(tuple_chemin_to_hasahtable(
-                                    inference_courante, new_chemin))
-                                # On ajoute le poids du chemin courant au dico des poids
-                                if tuple_chemin_to_hasahtable(inference_courante, chemin) in poids_chemin:
-                                    ancien_poids = poids_chemin[tuple_chemin_to_hasahtable(
-                                        inference_courante, chemin)]
-                                    taille_ancienChemin = len(chemin)
-                                    log_ancien_poids = math.log(ancien_poids)
-                                    ancien_poids_sum = log_ancien_poids*taille_ancienChemin
-                                    if(relation["w"]>0):
-                                        fact = 1
-                                    else:
-                                        fact = -1
-                                    if (relation["w"]!=0):
-                                        nouveau_poids = math.exp((ancien_poids_sum+(fact*math.log(abs(relation["w"]))))/(taille_ancienChemin+1))
-                                    else:
-                                        nouveau_poids = 0
-                                    print("ancien poids : ", nouveau_poids)
-                                    nouveau_poids = gestion_poids(annotation_name, nouveau_poids)
-                                    print("nouveau poids : ", nouveau_poids)
-                                    poids_chemin[tuple_chemin_to_hasahtable(inference_courante, new_chemin)] = nouveau_poids
-                                else:
-                                    print(
-                                        f"Warning: Key {tuple_chemin_to_hasahtable(inference_courante, chemin)} not found in poids_chemin.")
+                            traiter_relation_et_annotation(
+                                relation,
+                                dico_name,
+                                i,
+                                inference_courante_list,
+                                node2_data,
+                                chemin,
+                                chemins,
+                                poids_chemin,
+                                inference_courante,
+                                get_relation_from
+                            )
                     except Exception as e:
                         print("Exception : ", e)
         # on supprime les chemins qui ont un poids trop faible
@@ -264,23 +370,7 @@ def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
         i=i+1
         print(i)
     # On affiche les chemins et leur poids
-    res = ""
-    for (inference_courante, chemin_inf) in chemins.items():
-        inf_lst = ast.literal_eval(inference_courante)
-        for chemin in chemin_inf:
-            if len(chemin) == len(inf_lst)+1:
-                for i in range(len(inf_lst)):
-                    res = res+chemin[i]["name"] + " -> " + inf_lst[i] + " -> "
-                    if i+1 == len(inf_lst):
-                        res = res+chemin[i+1]["name"]
-                # (inf + " : " + chemin)
-                res = res+" : " + \
-                    str(poids_chemin[tuple_chemin_to_hasahtable(
-                        inference_courante, chemin)])+"\n"
-    # for (inf, chemin_ind) in chemins.items():
-        # for chemin in chemin_ind:
-            # print(str(inf) + " : " + str(chemin))
-        # print(poids_chemin[(inf, chemin)])
+    res = afficher_chemins_et_poids(chemins, poids_chemin)
     return res
 
 # chat r_isa animal
