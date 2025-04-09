@@ -79,6 +79,39 @@ def directRelation(node1, node2, wanted_relation):
         relation for relation in li_relation["relations"] if relation["type"] == wanted_relation]
     return li_relation
 
+def get_refinements(term, relation_type='r_raff_sem'):
+    url = f"https://jdm-api.demo.lirmm.fr/v0/refinements/{term}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"API request failed with status code {response.status_code}")
+        return None
+
+def check_isa_relation_with_refinements(node1, node2):
+    """check if a isa relation is valid using reff
+
+    Args:
+        node1 (string): name of node 1
+        node2 (string): name of node 1
+
+    Returns:
+        boolean: is the isa relation valid
+    """
+    # Get the refinements for node1
+    refinements_node_1 = get_refinements(node1)
+    refinements_node_2 = get_refinements(node2)
+
+    if refinements_node_1 and refinements_node_2:
+        li_already_seen = []
+        for refs in refinements_node_1["nodes"]:
+            li_already_seen.append(refs["id"])
+        for refs in refinements_node_2["nodes"]:
+            if refs["id"] in li_already_seen:
+                # On a trouvé un raff commun entre node1 et node2
+                return True
+    # Si on n'a pas trouvé de raffinement commun, on retourne False
+    return False
 
 def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
     # On initialise le graphe avec neoud de depart et objectif
