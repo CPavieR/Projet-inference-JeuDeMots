@@ -18,7 +18,7 @@ cache = {}
 requests_cache.install_cache('jdm_cache', backend='sqlite', expire_after=None)
 session = requests.Session()
 def translate_relationNBtoNOM(relation):
-    nom = "Uknown"
+    nom = "Unknown"
     try:
         nom = HelperJDM.nombre_a_nom[relation]
         return nom
@@ -130,7 +130,7 @@ def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
                         # Si on est pas à la fin du chemin, on ne garde que les 5 premières relations
                         # dans le cas opposé on garde tout pour éviter d'échoué le chemin
                         if (i+1 != len(inference_courante_list)):
-                            li_relation["relations"] = li_relation["relations"][:20]
+                            li_relation["relations"] = li_relation["relations"][:3]
                         # on recupere les annotations des relations
                         for relation in li_relation["relations"]:
                             annot=":r" + str(relation["id"])
@@ -185,8 +185,10 @@ def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
                                         nouveau_poids = math.exp((ancien_poids_sum+(fact*math.log(abs(relation["w"]))))/(taille_ancienChemin+1))
                                     else:
                                         nouveau_poids = 0
+                                    print("ancien poids : ", nouveau_poids)
+                                    nouveau_poids = gestion_poids(annotation_name, nouveau_poids)
+                                    print("nouveau poids : ", nouveau_poids)
                                     poids_chemin[tuple_chemin_to_hasahtable(inference_courante, new_chemin)] = nouveau_poids
-                                    
                                 else:
                                     print(
                                         f"Warning: Key {tuple_chemin_to_hasahtable(inference_courante, chemin)} not found in poids_chemin.")
@@ -286,6 +288,23 @@ def callFromDiscordInduc(input_text):
 def callFromDiscordAll(input_text):
     li_infer = '[["r_isa", "{r_cible}"],["r_hypo", "{r_cible}"],["r_syn", "{r_cible}"],["{r_cible}", "r_syn"]]'
     return callFromDiscord(input_text, li_infer)
+
+def gestion_poids(annotation_name, poids):
+    annotation_weights = {
+    "toujours vrai": 1.3,
+    "impossible": 0.5,
+    "pertinent": 1.2,
+    "non pertinent": 0.8,
+    "improbable": 0.8,
+    "fréquent": 1.1,
+    "rare": 0.9
+    }
+    for key, coef in annotation_weights.items():
+        if key == annotation_name:
+            poids *= coef
+    if poids > 1:
+        poids = 1
+    return poids
 
 
 """cacheFile = open("cache.json", "r")
