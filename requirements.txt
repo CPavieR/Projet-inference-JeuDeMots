@@ -1,3 +1,4 @@
 discord
 requests
 requests_cache
+numpy
