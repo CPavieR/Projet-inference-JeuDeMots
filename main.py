@@ -170,23 +170,25 @@ def traiter_relation(relation, dico_name, annotation_name, i, inference_courante
     if node2Id in dico_name:
         node2 = dico_name[node2Id]
     node2["annotation"] = annotation_name
+                            
+    # If the relation is of type "r_isa" we want to check the reffinement to see if the relation is indeed valid
+    if(inference_courante_list[i] != "r_isa" or check_isa_relation_with_refinements(chemin[i]["name"], node2["name"])):
 
-    # Check if the destination node matches the inference criteria
-    if ((i + 1 == len(inference_courante_list) and node2["id"] == node2_data["id"]) or i + 1 != len(inference_courante_list)):
-        # Continue the current path with the found node
-        new_chemin = chemin + [node2]
-        # Add this path to the list of possible paths
-        chemins[str(inference_courante_list)].append(new_chemin)
-        print(tuple_chemin_to_hasahtable(inference_courante, new_chemin))
-        # Update the weight of the current path in the poids_chemin dictionary
-        update_poids_chemin(
-            poids_chemin,
-            inference_courante,
-            chemin,
-            relation,
-            annotation_name,
-            new_chemin
-        )
+        # Check if the destination node matches the inference criteria
+        if ((i + 1 == len(inference_courante_list) and node2["id"] == node2_data["id"]) or i + 1 != len(inference_courante_list)):
+            # Continue the current path with the found node
+            new_chemin = chemin + [node2]
+            # Add this path to the list of possible paths
+            chemins[str(inference_courante_list)].append(new_chemin)
+            # Update the weight of the current path in the poids_chemin dictionary
+            update_poids_chemin(
+                poids_chemin,
+                inference_courante,
+                chemin,
+                relation,
+                annotation_name,
+                new_chemin
+            )
 
 def afficher_chemins_et_poids(chemins, poids_chemin):
     """
@@ -315,7 +317,9 @@ def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
                         # Si on est pas à la fin du chemin, on ne garde que les 5 premières relations
                         # dans le cas opposé on garde tout pour éviter d'échoué le chemin
                         if (i+1 != len(inference_courante_list)):
-                            li_relation["relations"] = li_relation["relations"][:3]
+                            li_relation["relations"] = li_relation["relations"][:5]
+                        else:
+                            li_relation["relations"] = li_relation["relations"][:50]
                         ############# Gestion des annotations #############
                         # on recupere les annotations des relations
                         for relation in li_relation["relations"]:
@@ -351,10 +355,14 @@ def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
                     if tuple_chemin_to_hasahtable(inference_courante, chemin) in poids_chemin:
                         poids_chemin.pop(
                             tuple_chemin_to_hasahtable(inference_courante, chemin))
-        #si on a plus de 10 chemins, definie un seuil pour garder les 10 chemins avec les meilleurs scores
-        if(len(li_poids_a_trier) >= 20):
+        #si on a plus de 20 chemins, definie un seuil pour garder les 20 chemins avec les meilleurs scores
+        #sauf pour la derniere boulce, on ne garde que les 10 dernier
+        # sauf pour la dernière boucle, on ne garde que les 10 derniers
+        if not i < max_size: 
+            limite = 10
+        if(len(li_poids_a_trier) >= limite):
             li_poids_a_trier.sort()
-            seuil = li_poids_a_trier[-20]
+            seuil = li_poids_a_trier[-limite]
         #si il y a moins de 10 chemins, on garde tout
         else:
             seuil= 0
