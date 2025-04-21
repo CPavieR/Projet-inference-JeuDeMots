@@ -214,6 +214,32 @@ def afficher_chemins_et_poids(chemins, poids_chemin):
                     inference_courante, chemin)]) + "\n"
     return res
 
+def get_parsable_output(chemins, poids_chemin):
+    """
+    Formats and returns the paths and their weights.
+
+    Args:
+        chemins (dict): Dictionary of paths for each inference type.
+        poids_chemin (dict): Dictionary of chemin weights.
+
+    Returns:
+        list of dict: List of dictionaries containing paths and their weights.
+    """
+    res = []
+    for (inference_courante, chemin_inf) in chemins.items():
+        inf_lst = ast.literal_eval(inference_courante)
+        for chemin in chemin_inf:
+            if len(chemin) == len(inf_lst) + 1:
+                chemin_dict = {}
+                chemin_dict["inference"] = inference_courante
+                chemin_dict["chemin"] = []
+                for i in range(len(chemin)):
+                    chemin_dict["chemin"].append(chemin[i]["name"])
+                chemin_dict["poids"] = poids_chemin[tuple_chemin_to_hasahtable(
+                    inference_courante, chemin)]
+                res.append(chemin_dict)
+    return res
+
 def traiter_relation_et_annotation(relation, dico_name, i, inference_courante_list, node2_data, chemin, chemins, poids_chemin, inference_courante, get_relation_from):
     """
     Handles the annotation extraction and processes the relation.
@@ -358,6 +384,7 @@ def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
         #si on a plus de 20 chemins, definie un seuil pour garder les 20 chemins avec les meilleurs scores
         #sauf pour la derniere boulce, on ne garde que les 10 dernier
         # sauf pour la dernière boucle, on ne garde que les 10 derniers
+        limite = 20
         if not i < max_size: 
             limite = 10
         if(len(li_poids_a_trier) >= limite):
@@ -378,8 +405,8 @@ def create_graphGen(node1_data, node2_data, li_Inference, wanted_relation):
         i=i+1
         print(i)
     # On affiche les chemins et leur poids
-    res = afficher_chemins_et_poids(chemins, poids_chemin)
-    return res
+    
+    return chemins, poids_chemin
 
 # chat r_isa animal
 # chat r_agent-1 miauler
@@ -399,8 +426,9 @@ def callFromDiscord(input_text, li_infer):
         node2_data = getNodeByName(node2)
         li_infer = li_infer.format(
             r_cible=relation)
-        res = create_graphGen(node1_data, node2_data,
+        chemins, poids_chemin = create_graphGen(node1_data, node2_data,
                               ast.literal_eval(li_infer), relation)
+        res = afficher_chemins_et_poids(chemins, poids_chemin)
         cacheFile = open("cache.json", "w")
         cacheFile.write(json.dumps(cache))
         return res
@@ -459,8 +487,9 @@ if __name__ == "__main__":
             node2_data = getNodeByName(node2)
             li_infer = '[["r_isa", "{r_cible}"],["r_hypo", "{r_cible}"],["r_syn", "{r_cible}"],["{r_cible}", "r_syn"],["{r_cible}"]]'.format(
                 r_cible=relation)
-            res = create_graphGen(node1_data, node2_data,
+            chemins, poids_chemin = create_graphGen(node1_data, node2_data,
                             ast.literal_eval(li_infer), relation)
+            res = get_parsable_output(chemins, poids_chemin)
             print("-------------------Result-----------------------")
             print(res)
             print("------------------Please stay indoors--------------------")
