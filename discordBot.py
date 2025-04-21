@@ -63,7 +63,7 @@ async def all(ctx, *, message_content):
 
 @bot.command()
 async def carre(ctx, *, message_content):
-    await ctx.send("une question intéressante, je vais me renseigner :punch: :fire: :flag_us:")
+    await ctx.send("une question intéressante, je vais me renseigner :cat:")
     processed_content = callFromDiscordCarre(message_content)
     if(processed_content != ""):
         await ctx.send("AhAh , je connais la réponse ! :black_cat:")
