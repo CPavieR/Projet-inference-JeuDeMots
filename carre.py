@@ -8,6 +8,7 @@ import copy
 import re
 import math
 import numpy as np
+import requests_cache
 link_api = "https://jdm-api.demo.lirmm.fr/schema"
 api_get_node_by_name = "https://jdm-api.demo.lirmm.fr/v0/node_by_name/{node_name}"
 get_relation_from = "https://jdm-api.demo.lirmm.fr/v0/relations/from/{node1_name}"
@@ -16,7 +17,17 @@ get_node_by_id = "https://jdm-api.demo.lirmm.fr/v0/node_by_id/{node_id}"
 cache = {}
 
 R_SYN = 5
+MAX_INFERENCES = 10
 
+requests_cache.install_cache('jdm_cache', backend='sqlite', expire_after=None)
+session = requests.Session()
+def translate_relationNBtoNOM(relation):
+    nom = "Unknown"
+    try:
+        nom = HelperJDM.nombre_a_nom[relation]
+        return nom
+    except Exception:
+        return nom
 
 def translate_relationNBtoNOM(relation):
     nom = "Uknown"
@@ -29,11 +40,16 @@ def translate_relationNBtoNOM(relation):
 
 def requestWrapper(url):
     global cache
-    if url in cache:
-        return cache[url]
-    response = requests.get(url)
-
-    cache[url] = response.text
+    """cache = open("cache.json", "r")
+    data = json.load(cache)
+    cache.close()"""
+    #if url in cache:
+    #    return cache[url]
+    #response = requests.get(url)
+    response = session.get(url)
+    #cache[url] = response.text
+    #"""cache = open("cache.json", "w")
+    #cache.write(json.dumps(data))"""
     return response.text
 
 
@@ -68,6 +84,8 @@ def filter_relations(relationSet : dict, relationsToKeep: list, max_num_relation
 
 def carre(depart,relationCible,arrivee):
     resultats = []
+    # tient le compte du nombre de relations inferees
+    count = 0
     try:
         relationCibleNumber = HelperJDM.nom_a_nombre[relationCible.strip()]
     except Exception as e:
@@ -95,21 +113,24 @@ def carre(depart,relationCible,arrivee):
         # code pour enlever les nodes en anglais
         if re.match("en:.*",node1_syn["name"]):
             continue
+        elif node1_syn["name"].startswith("::"):
+            continue
         for r2 in relationsBut:
             node2_syn = json.loads(requestWrapper(get_node_by_id.format(node_id=r2["node2"])))
             if re.match("en:.*",node2_syn["name"]):
                 continue
+            elif node2_syn["name"].startswith("::"):
+                continue
+            # trouve ttes les relations entres les 2 synomymes
             relationsSynEntre = requestWrapper(get_relation_between.format(node1_name=node1_syn["name"],node2_name=node2_syn["name"]))
             try:
                 relationsSynEntre = json.loads(relationsSynEntre)["relations"]
+                # en enleve les relations qui ne nous interessent pas
                 relationsSouhaitees = filter_relations(relationsSynEntre,[relationCibleNumber])
                 #print("R1 :", r1)
-               # print("R2 :",r2)
-               # print(relationsSouhaitees)
+                # print("R2 :",r2)
+                # print(relationsSouhaitees)
                 for r in relationsSouhaitees:
-                    # Reflechir comment gerer les relations a poids negatifs
-
-                   
                     #print(f"{n1["name"]} r {n2["name"]} W : {r["w"]}")
                     #resultats.append([nodeDepart,n1,nodeBut,n2])
                     #print(nodeDepart["name"],nodeBut["name"], node1_syn["name"], node2_syn["name"])
@@ -126,29 +147,40 @@ def carre(depart,relationCible,arrivee):
                         poids = np.exp(poids)
                         if negative:
                             poids *= -1
-                        print(poids)
+                        print(f"poids quelconque : {poids}")
                     except Exception as e:
                         print(e)
                     
                     resultats.append({"chemin":chemin_courant,"w":poids})
+
+                    if(poids > 0):
+                        count += 1
+                        print(f"poid positif : {poids}, count : {count}")
+                    
+                    if(count >= MAX_INFERENCES):
+                        print("Found 10 positive relations !")
+                        resultats = sorted(
+                            resultats, key=lambda x: x["w"], reverse=True)
+                        
+                        for path in resultats:
+                            depart = json.loads(requestWrapper(get_node_by_id.format(node_id=path["chemin"][0]["node1"])))
+                            depart_syn = json.loads(requestWrapper(get_node_by_id.format(node_id=path["chemin"][0]["node2"])))
+                            but = json.loads(requestWrapper(get_node_by_id.format(node_id=path["chemin"][2]["node1"])))
+                            but_syn = json.loads(requestWrapper(get_node_by_id.format(node_id=path["chemin"][2]["node2"])))
+                            print(path["chemin"][2])
+                            print(f"{depart_syn["name"]} est un synomyne de {depart["name"]} , {but_syn["name"]} est un synonyme de {but["name"]} et nous avons {depart_syn["name"]} {relationCible} {but_syn["name"]}")
+            
+                        return resultats[:10]
                 
             except Exception as e:
                 continue
     
-    # goal : faire un carre en legende
-    
 
-    for r in resultats:
-        if(r["w"] < 0): continue
-        n1 = json.loads(requestWrapper(get_node_by_id.format(node_id=r["chemin"][0]["node2"])))
-        n2 = json.loads(requestWrapper(get_node_by_id.format(node_id=r["chemin"][1]["node2"])))
-        chemin_courant = "{} -> r_syn -> {}, {} -> r_syn -> {} , {} -> {} -> {}".format(
-nodeDepart["name"], n1["name"], nodeBut["name"], n2["name"], n1["name"], relationCible, n2["name"]
-)
-        print(chemin_courant)
+    resultats = sorted(resultats, key=lambda x: x["w"], reverse=True)
 
-    
-    print(resultats)     
+    if(len(resultats) >= 10):
+        return resultats[:10]       
+                 
     return resultats;
 
 def callFromDiscordCarre(input_text):
@@ -166,14 +198,4 @@ cacheFile = open("cache.json", "r")
 cache = json.load(cacheFile)
 cacheFile.close()
 if __name__ == "__main__":
-    while True:
-        input_text = input(
-            "entrer une relation entre deux mots:(exit pour quitter) ")
-        if input_text == "exit":
-            break
-        li = re.split(r"(\sr_.+\s)", input_text)
-        if len(li) == 3:
-            # algo carre
-            carre(li[0],li[1],li[2])
-            cacheFile = open("cache.json", "w")
-            cacheFile.write(json.dumps(cache))
+   callFromDiscordCarre("chat r_agent-1 sauter")
